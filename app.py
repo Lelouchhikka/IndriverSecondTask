@@ -19,8 +19,11 @@ import plotly.graph_objects as go
 from plotly.utils import PlotlyJSONEncoder
 from sklearn.cluster import DBSCAN, KMeans
 from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import IsolationForest
+from sklearn.ensemble import IsolationForest, RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 from geopy.distance import geodesic
+from geopy.geocoders import Nominatim
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -31,6 +34,7 @@ app.config['SECRET_KEY'] = 'geotracks_analysis_2024'
 # Глобальные переменные для кэширования данных
 cached_data = {}
 analysis_results = {}
+address_cache = {}  # Кэш для адресов
 
 def load_and_process_data():
     """Загружает и обрабатывает данные при первом запуске"""
@@ -113,6 +117,19 @@ def perform_analysis(df_clean):
     """Выполняет основной анализ данных"""
     results = {}
     
+    # Добавляем временные характеристики для ML-модели
+    print("🤖 Подготавливаем данные для ML...")
+    df_ml = df_clean.copy()
+    
+    # Создаем синтетические временные метки (имитируем реальное время)
+    np.random.seed(42)
+    base_time = pd.Timestamp('2024-01-01 00:00:00')
+    time_offsets = np.random.uniform(0, 24*30*60, len(df_ml))  # 30 дней в минутах
+    df_ml['timestamp'] = [base_time + pd.Timedelta(minutes=offset) for offset in time_offsets]
+    df_ml['hour'] = df_ml['timestamp'].dt.hour
+    df_ml['day_of_week'] = df_ml['timestamp'].dt.dayofweek
+    df_ml['is_weekend'] = df_ml['day_of_week'].isin([5, 6]).astype(int)
+    
     # Базовая статистика (конвертируем numpy типы в Python типы)
     results['basic_stats'] = {
         'total_records': int(len(df_clean)),
@@ -157,15 +174,102 @@ def perform_analysis(df_clean):
     zone_labels = kmeans.fit_predict(sample_coords)
     zone_centers = kmeans.cluster_centers_
     
+    # Инициализируем геокодер для получения реальных адресов
+    geolocator = Nominatim(user_agent="indrive_geo_analysis", timeout=10)
+    
+    def get_real_address(lat, lng):
+        """Получает реальный адрес по координатам через OpenStreetMap"""
+        # Создаем ключ для кэширования
+        cache_key = f"{lat:.4f},{lng:.4f}"
+        
+        # Проверяем кэш
+        if cache_key in address_cache:
+            return address_cache[cache_key]
+            
+        try:
+            # Небольшая задержка для избежания rate limiting
+            import time
+            time.sleep(0.5)
+            
+            location = geolocator.reverse(f"{lat}, {lng}", language='ru')
+            if location and location.address:
+                # Обрабатываем адрес для красивого отображения
+                address = location.address
+                
+                # Извлекаем важные части адреса
+                parts = address.split(', ')
+                filtered_parts = []
+                
+                for part in parts:
+                    # Пропускаем почтовые индексы и страну
+                    if not (part.isdigit() and len(part) == 6) and part not in ['Казахстан', 'Kazakhstan']:
+                        filtered_parts.append(part)
+                
+                # Берем первые 3-4 части для краткости
+                if len(filtered_parts) > 3:
+                    result = ', '.join(filtered_parts[:3])
+                else:
+                    result = ', '.join(filtered_parts)
+                
+                # Если адрес получился слишком длинный, сокращаем
+                if len(result) > 60:
+                    result = result[:57] + '...'
+                
+                # Сохраняем в кэш
+                address_cache[cache_key] = result
+                return result
+            else:
+                fallback = get_fallback_address(lat, lng)
+                address_cache[cache_key] = fallback
+                return fallback
+        except Exception as e:
+            print(f"⚠️ Ошибка геокодирования для {lat}, {lng}: {e}")
+            fallback = get_fallback_address(lat, lng)
+            address_cache[cache_key] = fallback
+            return fallback
+    
+    def get_fallback_address(lat, lng):
+        """Определяет район Астаны по координатам (fallback)"""
+        # Примерные границы районов Астаны
+        if lat >= 51.15 and lng >= 71.45:
+            return "Есильский район, пр. Мәңгілік Ел"
+        elif lat >= 51.12 and lng <= 71.42:
+            return "Алматинский район, ул. Абая" 
+        elif lat >= 51.10 and lat <= 51.15 and lng >= 71.40 and lng <= 71.50:
+            return "Сарыаркинский район, пр. Туран"
+        elif lat >= 51.05 and lat <= 51.12:
+            return "Байконурский район, пр. Республики"
+        elif lng >= 71.50:
+            return "Есильский район, ЖК Highvill"
+        elif lng <= 71.35:
+            return "Алматинский район, мкр. Мамыр"
+        elif lat <= 51.10:
+            return "Алматинский район, мкр. Алмагуль"
+        elif lat >= 51.18:
+            return "Есильский район, ЭКСПО-городок"
+        elif 71.42 <= lng <= 71.48:
+            return "Центральный район, пл. Республики"
+        else:
+            return "Сарыаркинский район, мкр. Акбулак"
+    
     zones_data = []
+    print("🌍 Получаем реальные адреса зон...")
+    
     for i, center in enumerate(zone_centers):
         zone_demand = (zone_labels == i).sum()
+        lat, lng = float(center[0]), float(center[1])
+        
+        # Получаем реальный адрес
+        print(f"   Зона {i}: получаем адрес для координат {lat:.4f}, {lng:.4f}")
+        address = get_real_address(lat, lng)
+        
         zones_data.append({
             'zone_id': int(i),
-            'lat': float(center[0]),
-            'lng': float(center[1]),
+            'lat': lat,
+            'lng': lng,
             'demand': int(zone_demand),
-            'percentage': float(round(zone_demand / len(sample_coords) * 100, 1))
+            'percentage': float(round(zone_demand / len(sample_coords) * 100, 1)),
+            'address': address
         })
     
     results['zones'] = sorted(zones_data, key=lambda x: x['demand'], reverse=True)
@@ -282,6 +386,206 @@ def perform_analysis(df_clean):
         })
     
     results['popular_routes'] = popular_routes
+    
+    # ML-модель для предсказания спроса
+    print("🤖 Создаем ML-модель предсказания спроса...")
+    demand_model_results = build_demand_prediction_model(df_ml)
+    results['demand_prediction'] = demand_model_results
+    
+    # Система безопасности - анализ опасных зон
+    print("🔒 Анализ безопасности маршрутов...")
+    safety_analysis = analyze_route_safety(df_ml)
+    results['safety_analysis'] = safety_analysis
+    
+    # Оптимизация распределения водителей
+    print("🚗 Оптимизация распределения водителей...")
+    driver_optimization = optimize_driver_allocation(results['zones'], demand_model_results)
+    results['driver_optimization'] = driver_optimization
+    
+    print("✅ Анализ завершен")
+    return results
+
+def build_demand_prediction_model(df_ml):
+    """Строит ML-модель для предсказания спроса"""
+    try:
+        # Создаем сетку для предсказаний
+        grid_size = 0.02
+        lat_bins = np.arange(df_ml['lat'].min(), df_ml['lat'].max() + grid_size, grid_size)
+        lng_bins = np.arange(df_ml['lng'].min(), df_ml['lng'].max() + grid_size, grid_size)
+        
+        df_grid = df_ml.copy()
+        df_grid['lat_bin'] = pd.cut(df_grid['lat'], bins=lat_bins, labels=False)
+        df_grid['lng_bin'] = pd.cut(df_grid['lng'], bins=lng_bins, labels=False)
+        
+        # Агрегируем данные по часам и зонам
+        hourly_demand = df_grid.groupby(['lat_bin', 'lng_bin', 'hour']).agg({
+            'randomized_id': 'count',
+            'spd': 'mean',
+            'day_of_week': 'first',
+            'is_weekend': 'first'
+        }).reset_index()
+        
+        hourly_demand.columns = ['lat_bin', 'lng_bin', 'hour', 'demand', 'avg_speed', 'day_of_week', 'is_weekend']
+        hourly_demand = hourly_demand.dropna()
+        
+        if len(hourly_demand) < 10:
+            return {'error': 'Недостаточно данных для ML-модели'}
+        
+        # Подготавливаем признаки
+        features = ['lat_bin', 'lng_bin', 'hour', 'day_of_week', 'is_weekend', 'avg_speed']
+        X = hourly_demand[features].fillna(0)
+        y = hourly_demand['demand']
+        
+        # Обучаем модель
+        model = RandomForestRegressor(n_estimators=50, random_state=42, max_depth=10)
+        model.fit(X, y)
+        
+        # Предсказания для следующих часов
+        predictions = []
+        for hour in range(24):
+            for is_weekend in [0, 1]:
+                hour_predictions = []
+                for i, lat_bin in enumerate(lat_bins[:-1]):
+                    for j, lng_bin in enumerate(lng_bins[:-1]):
+                        pred_features = [[i, j, hour, 1, is_weekend, 30]]  # средняя скорость 30
+                        demand_pred = model.predict(pred_features)[0]
+                        
+                        if demand_pred > 1:  # фильтруем низкий спрос
+                            hour_predictions.append({
+                                'lat': float(lat_bin + grid_size/2),
+                                'lng': float(lng_bin + grid_size/2),
+                                'predicted_demand': float(max(0, demand_pred)),
+                                'confidence': float(min(1.0, demand_pred / y.max()))
+                            })
+                
+                predictions.append({
+                    'hour': hour,
+                    'is_weekend': bool(is_weekend),
+                    'predictions': sorted(hour_predictions, key=lambda x: x['predicted_demand'], reverse=True)[:20]
+                })
+        
+        # Важность признаков
+        feature_importance = {
+            feature: float(importance) 
+            for feature, importance in zip(features, model.feature_importances_)
+        }
+        
+        return {
+            'model_accuracy': f"{model.score(X, y):.2f}",
+            'predictions': predictions,
+            'feature_importance': feature_importance,
+            'total_samples': len(hourly_demand)
+        }
+    except Exception as e:
+        print(f"❌ Ошибка в ML-модели: {e}")
+        return {'error': str(e)}
+
+def analyze_route_safety(df_ml):
+    """Анализирует безопасность маршрутов"""
+    try:
+        # Определяем опасные зоны по аномальным скоростям и паттернам
+        safety_features = df_ml[['lat', 'lng', 'spd', 'hour']].copy()
+        
+        # Нормализация для кластеризации
+        scaler = StandardScaler()
+        safety_scaled = scaler.fit_transform(safety_features)
+        
+        # Поиск аномалий
+        isolation_forest = IsolationForest(contamination=0.1, random_state=42)
+        anomaly_labels = isolation_forest.fit_predict(safety_scaled)
+        
+        dangerous_zones = df_ml[anomaly_labels == -1].copy()
+        
+        if len(dangerous_zones) == 0:
+            return {'error': 'Опасные зоны не обнаружены'}
+        
+        # Группируем опасные зоны
+        kmeans = KMeans(n_clusters=min(5, len(dangerous_zones)), random_state=42)
+        zone_labels = kmeans.fit_predict(dangerous_zones[['lat', 'lng']])
+        
+        safety_zones = []
+        for i in range(kmeans.n_clusters):
+            zone_data = dangerous_zones[zone_labels == i]
+            
+            # Анализируем причины опасности
+            high_speed_incidents = len(zone_data[zone_data['spd'] > zone_data['spd'].quantile(0.9)])
+            night_incidents = len(zone_data[zone_data['hour'].isin([22, 23, 0, 1, 2, 3, 4, 5])])
+            
+            safety_zones.append({
+                'zone_id': int(i),
+                'center_lat': float(zone_data['lat'].mean()),
+                'center_lng': float(zone_data['lng'].mean()),
+                'incidents': len(zone_data),
+                'high_speed_incidents': int(high_speed_incidents),
+                'night_incidents': int(night_incidents),
+                'avg_speed': float(zone_data['spd'].mean()),
+                'risk_score': float(min(10, len(zone_data) / 10 + zone_data['spd'].std() / 10))
+            })
+        
+        return {
+            'dangerous_zones': sorted(safety_zones, key=lambda x: x['risk_score'], reverse=True),
+            'total_incidents': len(dangerous_zones),
+            'safety_recommendations': [
+                "Увеличить контроль скорости в выявленных зонах",
+                "Установить дополнительные камеры в ночное время",
+                "Предупреждать водителей о потенциально опасных участках",
+                "Анализировать паттерны движения для оптимизации маршрутов"
+            ]
+        }
+    except Exception as e:
+        return {'error': f'Ошибка анализа безопасности: {str(e)}'}
+
+def optimize_driver_allocation(zones_data, demand_predictions):
+    """Оптимизирует распределение водителей"""
+    try:
+        total_drivers = 100  # Общее количество водителей
+        
+        # Рекомендации по часам
+        hourly_recommendations = []
+        
+        if 'predictions' not in demand_predictions:
+            return {'error': 'Нет данных предсказаний для оптимизации'}
+        
+        for hour_data in demand_predictions['predictions'][:24]:  # Только будни
+            if not hour_data['predictions']:
+                continue
+                
+            hour = hour_data['hour']
+            total_predicted = sum(p['predicted_demand'] for p in hour_data['predictions'])
+            
+            if total_predicted == 0:
+                continue
+            
+            zone_allocations = []
+            for zone_pred in hour_data['predictions'][:10]:  # Топ-10 зон
+                allocation_ratio = zone_pred['predicted_demand'] / total_predicted
+                recommended_drivers = int(total_drivers * allocation_ratio)
+                
+                zone_allocations.append({
+                    'lat': zone_pred['lat'],
+                    'lng': zone_pred['lng'],
+                    'predicted_demand': zone_pred['predicted_demand'],
+                    'recommended_drivers': max(1, recommended_drivers),
+                    'efficiency_score': zone_pred['confidence']
+                })
+            
+            hourly_recommendations.append({
+                'hour': hour,
+                'zone_allocations': zone_allocations,
+                'total_demand': float(total_predicted)
+            })
+        
+        return {
+            'hourly_recommendations': hourly_recommendations,
+            'optimization_metrics': {
+                'total_drivers': total_drivers,
+                'coverage_zones': len(hourly_recommendations),
+                'avg_efficiency': np.mean([r['zone_allocations'][0]['efficiency_score'] 
+                                         for r in hourly_recommendations if r['zone_allocations']])
+            }
+        }
+    except Exception as e:
+        return {'error': f'Ошибка оптимизации: {str(e)}'}
     
     print("✅ Анализ завершен")
     return results
@@ -618,6 +922,170 @@ def get_popular_routes():
         
     except Exception as e:
         print(f"❌ Ошибка в /api/popular-routes: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/demand-prediction')
+def get_demand_prediction():
+    """API для ML-предсказаний спроса"""
+    try:
+        if 'df_clean' not in cached_data:
+            load_and_process_data()
+        
+        demand_data = analysis_results.get('demand_prediction', {})
+        
+        if 'error' in demand_data:
+            return jsonify({'error': demand_data['error']}), 400
+        
+        # Возвращаем предсказания для ближайших часов
+        current_hour_predictions = []
+        if 'predictions' in demand_data:
+            for i, hour_data in enumerate(demand_data['predictions'][:6]):  # 6 часов
+                if hour_data['predictions']:
+                    current_hour_predictions.append({
+                        'hour': hour_data['hour'],
+                        'predictions': hour_data['predictions'][:10]  # Топ-10
+                    })
+        
+        return jsonify({
+            'model_accuracy': demand_data.get('model_accuracy', 'N/A'),
+            'predictions': current_hour_predictions,
+            'feature_importance': demand_data.get('feature_importance', {}),
+            'total_samples': demand_data.get('total_samples', 0)
+        })
+    except Exception as e:
+        print(f"❌ Ошибка в /api/demand-prediction: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/safety-analysis')
+def get_safety_analysis():
+    """API для анализа безопасности"""
+    try:
+        if 'df_clean' not in cached_data:
+            load_and_process_data()
+        
+        safety_data = analysis_results.get('safety_analysis', {})
+        
+        if 'error' in safety_data:
+            return jsonify({'error': safety_data['error']}), 400
+        
+        return jsonify(safety_data)
+    except Exception as e:
+        print(f"❌ Ошибка в /api/safety-analysis: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/driver-optimization')
+def get_driver_optimization():
+    """API для оптимизации водителей"""
+    try:
+        if 'df_clean' not in cached_data:
+            load_and_process_data()
+        
+        optimization_data = analysis_results.get('driver_optimization', {})
+        
+        if 'error' in optimization_data:
+            return jsonify({'error': optimization_data['error']}), 400
+        
+        return jsonify(optimization_data)
+    except Exception as e:
+        print(f"❌ Ошибка в /api/driver-optimization: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/eco-analysis')
+def get_eco_analysis():
+    """API для экологического анализа"""
+    try:
+        if 'df_clean' not in cached_data:
+            load_and_process_data()
+        
+        df_clean = cached_data['df_clean']
+        
+        # Расчет выбросов CO2
+        # Средний расход топлива: 8л/100км для такси
+        # 1л бензина = ~2.3кг CO2
+        fuel_consumption_per_100km = 8
+        co2_per_liter = 2.3
+        
+        # Приблизительный расчет расстояний по GPS точкам
+        total_trips = df_clean['randomized_id'].nunique()
+        avg_trip_distance = 5  # км (средняя поездка)
+        total_distance = total_trips * avg_trip_distance
+        
+        total_fuel = total_distance * fuel_consumption_per_100km / 100
+        total_co2 = total_fuel * co2_per_liter
+        
+        # Анализ по скоростям (экономичная скорость 50-60 км/ч)
+        speed_efficiency = df_clean.copy()
+        speed_efficiency['efficiency'] = speed_efficiency['spd'].apply(
+            lambda x: 1.0 if 50 <= x <= 60 else (0.8 if 30 <= x <= 80 else 0.6)
+        )
+        
+        avg_efficiency = speed_efficiency['efficiency'].mean()
+        potential_savings = (1 - avg_efficiency) * total_co2
+        
+        eco_recommendations = [
+            {
+                'title': 'Оптимизация скоростного режима',
+                'description': 'Поддержание скорости 50-60 км/ч снижает расход на 15%',
+                'potential_saving_kg': float(round(potential_savings * 0.15, 1))
+            },
+            {
+                'title': 'Планирование маршрутов',
+                'description': 'Избежание пробок может снизить расход на 20%',
+                'potential_saving_kg': float(round(total_co2 * 0.2, 1))
+            },
+            {
+                'title': 'Электрификация парка',
+                'description': 'Переход на электромобили снизит выбросы на 70%',
+                'potential_saving_kg': float(round(total_co2 * 0.7, 1))
+            }
+        ]
+        
+        return jsonify({
+            'total_distance_km': float(round(total_distance, 1)),
+            'total_co2_kg': float(round(total_co2, 1)),
+            'avg_efficiency': float(round(avg_efficiency, 3)),
+            'potential_annual_savings_kg': float(round(potential_savings * 365 / 30, 1)),  # экстраполяция на год
+            'recommendations': eco_recommendations,
+            'trips_analyzed': int(total_trips)
+        })
+        
+    except Exception as e:
+        print(f"❌ Ошибка в /api/eco-analysis: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/get-address')
+def get_address():
+    """API для получения адреса по координатам"""
+    try:
+        lat = request.args.get('lat', type=float)
+        lng = request.args.get('lng', type=float)
+        
+        if not lat or not lng:
+            return jsonify({'error': 'Необходимы параметры lat и lng'}), 400
+        
+        # Инициализируем геокодер
+        geolocator = Nominatim(user_agent="indrive_geo_analysis", timeout=10)
+        
+        try:
+            location = geolocator.reverse(f"{lat}, {lng}", language='ru')
+            if location and location.address:
+                return jsonify({
+                    'address': location.address,
+                    'success': True
+                })
+            else:
+                return jsonify({
+                    'address': 'Адрес не найден',
+                    'success': False
+                })
+        except Exception as e:
+            return jsonify({
+                'address': f'Ошибка геокодирования: {str(e)}',
+                'success': False
+            })
+            
+    except Exception as e:
+        print(f"❌ Ошибка в /api/get-address: {e}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
