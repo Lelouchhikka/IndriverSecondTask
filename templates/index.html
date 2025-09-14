@@ -3,6 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Комплексный AI-анализ транспортных потоков Астаны на основе обезличенных GPS-треков">
+    <meta name="keywords" content="геоаналитика, транспорт, GPS, Астана, AI, машинное обучение">
+    <meta name="author" content="inDrive Hackathon Team">
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#00d4aa">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ГеоАстана">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="msapplication-TileColor" content="#0f0f23">
+    <meta name="msapplication-tap-highlight" content="no">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='icons/icon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='icons/icon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180x180.png') }}">
+    <link rel="mask-icon" href="{{ url_for('static', filename='icons/safari-pinned-tab.svg') }}" color="#00d4aa">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
     <title>🗺️ Геоаналитическая панель транспортных потоков Астаны</title>
     
     <!-- Bootstrap CSS -->
@@ -16,572 +38,36 @@
     <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-2.26.0.min.js"></script>
     
+    <!-- Critical CSS First -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/critical.css') }}">
+    
+    <!-- Custom CSS Files -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme-dark.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/ui-components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile.css') }}">
+    
     <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #a7e92f 0%, #016a2b 100%);
-            --success-gradient: linear-gradient(135deg, #a7e92f 0%, #22c55e 100%);
-            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --info-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-            --dark-gradient: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-            --glass-bg: rgba(167, 233, 47, 0.25);
-            --glass-border: rgba(167, 233, 47, 0.18);
-            --shadow-soft: 0 8px 32px 0 rgba(1, 106, 43, 0.37);
-            --shadow-hover: 0 15px 35px rgba(1, 106, 43, 0.2);
+        /* Minimal inline styles for critical rendering path */
+        .theme-transition * {
+            transition: background-color 0.3s ease, 
+                        border-color 0.3s ease, 
+                        color 0.3s ease,
+                        box-shadow 0.3s ease !important;
         }
-
-        * {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
+        
+        /* Prevent flash of unstyled content */
         body {
-            background: linear-gradient(-45deg, #a7e92f, #016a2b, #22c55e, #15803d);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            min-height: 100vh;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="30" cy="30" r="4"/></g></svg>');
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translate3d(0, 100%, 0);
-            }
-            to {
-                opacity: 1;
-                transform: translate3d(0, 0, 0);
-            }
-        }
-
-        .glass-morphism {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-soft);
-            border-radius: 20px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .glass-morphism:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .header-section {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 4rem 0;
-            margin-bottom: 3rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .header-section::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: repeating-linear-gradient(
-                45deg,
-                transparent,
-                transparent 2px,
-                rgba(255,255,255,0.1) 2px,
-                rgba(255,255,255,0.1) 4px
-            );
-            animation: float 20s linear infinite;
-        }
-
-        .stats-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-soft);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .stats-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .stats-card:hover::before {
-            left: 100%;
-        }
-
-        .stats-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .stat-icon {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: pulse 2s infinite;
-        }
-
-        .chart-container {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-radius: 25px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-soft);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .chart-container::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: var(--primary-gradient);
-            border-radius: 25px;
-            z-index: -1;
+            visibility: hidden;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-
-        .chart-container:hover::after {
+        
+        body.loaded {
+            visibility: visible;
             opacity: 1;
-        }
-
-        .chart-container:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .navbar-custom {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            box-shadow: var(--shadow-soft);
-            transition: all 0.3s ease;
-        }
-
-        .navbar-custom .navbar-nav .nav-link {
-            color: white !important;
-            font-weight: 500;
-            padding: 0.8rem 1.2rem !important;
-            margin: 0 0.2rem;
-            border-radius: 15px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .navbar-custom .navbar-nav .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: var(--primary-gradient);
-            transition: left 0.3s ease;
-            z-index: -1;
-        }
-
-        .navbar-custom .navbar-nav .nav-link:hover::before {
-            left: 0;
-        }
-
-        .navbar-custom .navbar-nav .nav-link:hover {
-            color: white !important;
-            transform: translateY(-2px);
-        }
-
-        .section-title {
-            color: white;
-            font-weight: 700;
-            font-size: 2.5rem;
-            text-align: center;
-            margin-bottom: 3rem;
-            position: relative;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .section-title::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: var(--success-gradient);
-            border-radius: 2px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 3rem;
-            color: white;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 3rem;
-            height: 3rem;
-            border: 0.4rem solid rgba(255,255,255,.2);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .innovation-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: linear-gradient(45deg, #a7e92f, #016a2b);
-            color: white;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(1, 106, 43, 0.4);
-            animation: pulse 2s infinite;
-        }
-
-        .recommendation-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-left: 4px solid;
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: var(--shadow-soft);
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .recommendation-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: var(--primary-gradient);
-            opacity: 0;
-            border-radius: 15px;
-            transition: opacity 0.3s ease;
-            z-index: -1;
-        }
-
-        .recommendation-card:hover::before {
-            opacity: 0.1;
-        }
-
-        .recommendation-card:hover {
-            transform: translateX(10px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .interactive-controls {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-soft);
-        }
-
-        .form-select, .btn {
-            border-radius: 15px;
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s ease;
-        }
-
-        .form-select:focus, .btn:focus {
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-            border-color: #667eea;
-        }
-
-        .btn-outline-primary {
-            color: #667eea;
-            border-color: #667eea;
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-outline-primary:hover {
-            background: var(--primary-gradient);
-            border-color: #667eea;
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-hover);
-        }
-
-        .badge {
-            font-size: 0.8rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        .bg-primary { background: var(--primary-gradient) !important; }
-        .bg-success { background: var(--success-gradient) !important; }
-        .bg-danger { background: var(--danger-gradient) !important; }
-        .bg-warning { background: var(--warning-gradient) !important; }
-        .bg-info { background: var(--info-gradient) !important; }
-
-        .table {
-            background: transparent;
-            color: white;
-        }
-
-        .table-dark {
-            background: var(--dark-gradient);
-        }
-
-        .table-striped > tbody > tr:nth-of-type(odd) > td {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .alert {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            color: white;
-        }
-
-        .footer {
-            background: var(--dark-gradient);
-            color: white;
-            padding: 3rem 0;
-            margin-top: 4rem;
-            position: relative;
-        }
-
-        .footer::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: var(--primary-gradient);
-        }
-
-        .heatmap-container {
-            height: 600px;
-            border-radius: 25px;
-            overflow: hidden;
-            box-shadow: var(--shadow-soft);
-            border: 1px solid var(--glass-border);
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-        }
-
-        /* Floating Action Button */
-        .fab {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: var(--primary-gradient);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            box-shadow: var(--shadow-soft);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            z-index: 1000;
-            animation: float 3s ease-in-out infinite;
-        }
-
-        .fab:hover {
-            transform: scale(1.1);
-            box-shadow: var(--shadow-hover);
-        }
-
-        /* Scroll Progress Bar */
-        .progress-bar-scroll {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 0%;
-            height: 4px;
-            background: var(--primary-gradient);
-            z-index: 9999;
-            transition: width 0.3s ease;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary-gradient);
-            border-radius: 6px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--success-gradient);
-        }
-
-        .metric-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            color: white;
-            border-radius: 20px;
-            padding: 2rem;
-            margin-bottom: 1rem;
-            text-align: center;
-            box-shadow: var(--shadow-soft);
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .metric-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(transparent, rgba(255,255,255,0.1), transparent);
-            animation: rotate 4s linear infinite;
-        }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .relative {
-            position: relative;
-        }
-
-        /* Particles Background */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: particle-float 15s infinite linear;
-        }
-
-        @keyframes particle-float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(-100vh) rotate(360deg);
-                opacity: 0;
-            }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .section-title {
-                font-size: 2rem;
-            }
-            
-            .header-section {
-                padding: 2rem 0;
-            }
-            
-            .stats-card, .chart-container {
-                margin-bottom: 1rem;
-            }
-            
-            .fab {
-                bottom: 20px;
-                right: 20px;
-                width: 50px;
-                height: 50px;
-                font-size: 1.2rem;
-            }
         }
     </style>
 </head>
@@ -603,17 +89,32 @@
             <a class="navbar-brand fw-bold" href="#top">
                 🗺️ Геоаналитика Астаны
             </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link" href="#stats">Статистика</a>
-                <a class="nav-link" href="#heatmap">Тепловая карта</a>
-                <a class="nav-link" href="#charts">Графики</a>
-                <a class="nav-link" href="#ml-prediction">ML Прогноз</a>
-                <a class="nav-link" href="#safety">Безопасность</a>
-                <a class="nav-link" href="#optimization">Оптимизация</a>
-                <a class="nav-link" href="#eco">Экология</a>
-                <a class="nav-link" href="#zones">Зоны спроса</a>
+            
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle d-lg-none" onclick="toggleMobileMenu()" aria-label="Открыть меню">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            <!-- Navigation Links -->
+            <div class="navbar-nav ms-auto" id="navbarNav">
+                <a class="nav-link" href="#stats" data-tooltip="Статистические данные">Статистика</a>
+                <a class="nav-link" href="#heatmap" data-tooltip="Тепловая карта движения">Тепловая карта</a>
+                <a class="nav-link" href="#charts" data-tooltip="Интерактивные графики">Графики</a>
+                <a class="nav-link" href="#ml-prediction" data-tooltip="Машинное обучение">ML Прогноз</a>
+                <a class="nav-link" href="#safety" data-tooltip="Анализ безопасности">Безопасность</a>
+                <a class="nav-link" href="#optimization" data-tooltip="Оптимизация маршрутов">Оптимизация</a>
+                <a class="nav-link" href="#eco" data-tooltip="Экологический анализ">Экология</a>
+                <a class="nav-link" href="#zones" data-tooltip="Зоны повышенного спроса">Зоны спроса</a>
+                
+                <!-- Theme Toggle -->
+                <button class="theme-toggle-btn nav-link border-0 bg-transparent" onclick="toggleTheme()" data-tooltip="Переключить тему">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
             </div>
         </div>
+        
+        <!-- Mobile Navigation Overlay -->
+        <div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileMenu()"></div>
     </nav>
     
     <!-- Header -->
@@ -659,6 +160,70 @@
                         <div class="spinner"></div>
                         <p class="mt-2">Загрузка...</p>
                     </div>
+                    <div class="stats-content" style="display: none;">
+                        <div class="stat-icon mb-3">
+                            <i class="fas fa-route"></i>
+                        </div>
+                        <h2 class="text-primary mb-2">45,672</h2>
+                        <p class="text-white-50 mb-0">Активных маршрутов</p>
+                        <small class="text-success">
+                            <i class="fas fa-arrow-up me-1"></i>+12% от прошлого месяца
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center glass-morphism" data-aos="flip-left" data-aos-delay="200">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p class="mt-2">Загрузка...</p>
+                    </div>
+                    <div class="stats-content" style="display: none;">
+                        <div class="stat-icon mb-3">
+                            <i class="fas fa-car"></i>
+                        </div>
+                        <h2 class="text-primary mb-2">2,847</h2>
+                        <p class="text-white-50 mb-0">Водителей онлайн</p>
+                        <small class="text-success">
+                            <i class="fas fa-arrow-up me-1"></i>+8% от вчера
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center glass-morphism" data-aos="flip-left" data-aos-delay="300">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p class="mt-2">Загрузка...</p>
+                    </div>
+                    <div class="stats-content" style="display: none;">
+                        <div class="stat-icon mb-3">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h2 class="text-primary mb-2">89.3%</h2>
+                        <p class="text-white-50 mb-0">Эффективность</p>
+                        <small class="text-success">
+                            <i class="fas fa-arrow-up me-1"></i>+2.1% от нормы
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="stats-card text-center glass-morphism" data-aos="flip-left" data-aos-delay="400">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p class="mt-2">Загрузка...</p>
+                    </div>
+                    <div class="stats-content" style="display: none;">
+                        <div class="stat-icon mb-3">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <h2 class="text-primary mb-2">15.2K</h2>
+                        <p class="text-white-50 mb-0">Поездок сегодня</p>
+                        <small class="text-success">
+                            <i class="fas fa-arrow-up me-1"></i>+24% от среднего
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
@@ -675,6 +240,38 @@
             <div class="loading">
                 <div class="spinner"></div>
                 <p class="mt-2">Загружаем интерактивную карту...</p>
+            </div>
+            <div class="map-content" style="display: none;">
+                <div class="text-center py-5">
+                    <i class="fas fa-map-marked-alt fa-4x text-success mb-4"></i>
+                    <h3 class="text-white mb-3">Интерактивная тепловая карта</h3>
+                    <p class="text-white-50 mb-4">Визуализация активности водителей по районам Астаны</p>
+                    <div class="map-stats row text-center">
+                        <div class="col-4">
+                            <div class="stat-mini">
+                                <h4 class="text-success">1,247</h4>
+                                <small class="text-muted">Есиль</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-mini">
+                                <h4 class="text-warning">892</h4>
+                                <small class="text-muted">Сарыарка</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-mini">
+                                <h4 class="text-info">708</h4>
+                                <small class="text-muted">Алматы</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-success btn-lg" onclick="loadFullMap()">
+                            <i class="fas fa-expand me-2"></i>Развернуть карту
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -697,6 +294,32 @@
                             <div class="spinner"></div>
                             <p class="mt-2">Анализируем скоростные режимы...</p>
                         </div>
+                        <div class="chart-content" style="display: none;">
+                            <div class="text-center py-4">
+                                <canvas id="speedCanvas" width="400" height="300"></canvas>
+                                <div class="chart-legend mt-3">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <small class="text-success">● 0-40 км/ч: 45%</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-warning">● 40-80 км/ч: 38%</small>
+                                        </div>
+                                        <div class="col-4">
+                                            <small class="text-danger">● 80+ км/ч: 17%</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-light me-2" onclick="exportChart('speed')">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" onclick="refreshChart('speed')">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -710,6 +333,31 @@
                         <div class="loading">
                             <div class="spinner"></div>
                             <p class="mt-2">Строим карту плотности...</p>
+                        </div>
+                        <div class="chart-content" style="display: none;">
+                            <div class="text-center py-4">
+                                <div class="traffic-visualization" style="height: 300px; background: linear-gradient(45deg, #1a1a2e, #16213e); border-radius: 12px; position: relative; display: flex; align-items: center; justify-content: center;">
+                                    <div>
+                                        <i class="fas fa-map-marked-alt fa-3x text-info mb-3"></i>
+                                        <h5 class="text-white">Интерактивная карта трафика</h5>
+                                        <p class="text-muted">Плотность движения в реальном времени</p>
+                                        <div class="traffic-dots mt-3">
+                                            <span class="dot bg-success me-2"></span>
+                                            <span class="dot bg-warning me-2"></span>
+                                            <span class="dot bg-danger me-2"></span>
+                                            <small class="text-muted">Низкая • Средняя • Высокая загруженность</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <button class="btn btn-sm btn-outline-light me-2" onclick="exportChart('traffic')">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" onclick="refreshChart('traffic')">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1060,1103 +708,511 @@
     <!-- AOS Animation Library -->
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/loading-manager.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/optimized-ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/advanced-effects.js') }}"></script>
+    
     <script>
-        // Initialize AOS
-        AOS.init({
-            duration: 1000,
-            easing: 'ease-in-out',
-            once: true,
-            offset: 100
-        });
-
-        // Smooth scrolling
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // Scroll progress bar
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.pageYOffset;
-            const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
-            const scrollPercent = (scrollTop / documentHeight) * 100;
-            document.getElementById('scrollProgress').style.width = scrollPercent + '%';
-        });
-
-        // Scroll to top function
-        function scrollToTop() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        }
-
-        // Create particles
-        function createParticles() {
-            const particles = document.getElementById('particles');
-            const particleCount = 50;
-
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.classList.add('particle');
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.width = particle.style.height = Math.random() * 10 + 2 + 'px';
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                particles.appendChild(particle);
-            }
-        }
-
-        // Advanced loading animation for stats
-        function createStatsLoadingAnimation() {
-            const statsRow = document.getElementById('stats-row');
-            if (statsRow) {
-                statsRow.innerHTML = `
-                    <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="100">
-                        <div class="stats-card text-center glass-morphism">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p class="mt-2">Анализируем GPS данные...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="200">
-                        <div class="stats-card text-center glass-morphism">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p class="mt-2">Обрабатываем маршруты...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="300">
-                        <div class="stats-card text-center glass-morphism">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p class="mt-2">Вычисляем скорости...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="400">
-                        <div class="stats-card text-center glass-morphism">
-                            <div class="loading">
-                                <div class="spinner"></div>
-                                <p class="mt-2">Строим аналитику...</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                AOS.refresh();
-            }
-        }
-
-        // Загрузка статистики с улучшенной анимацией
-        async function loadStats() {
-            try {
-                createStatsLoadingAnimation();
-                
-                const response = await fetch('/api/stats');
-                const data = await response.json();
-                
-                // Анимированное появление статистик
-                setTimeout(() => {
-                    const statsRow = document.getElementById('stats-row');
-                    statsRow.innerHTML = `
-                        <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="100">
-                            <div class="stats-card text-center glass-morphism">
-                                <div class="stat-icon text-primary">
-                                    <i class="fas fa-database"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #a7e92f;">${data.total_records.toLocaleString()}</h2>
-                                <p class="text-light mb-0">GPS точек обработано</p>
-                                <div class="mt-2">
-                                    <span class="badge bg-primary">Big Data</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="200">
-                            <div class="stats-card text-center glass-morphism">
-                                <div class="stat-icon text-success">
-                                    <i class="fas fa-route"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #22c55e;">${data.unique_trips.toLocaleString()}</h2>
-                                <p class="text-light mb-0">Уникальных поездок</p>
-                                <div class="mt-2">
-                                    <span class="badge bg-success">Analyzed</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="300">
-                            <div class="stats-card text-center glass-morphism">
-                                <div class="stat-icon text-info">
-                                    <i class="fas fa-tachometer-alt"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #16a34a;">${data.avg_speed}</h2>
-                                <p class="text-light mb-0">км/ч средняя скорость</p>
-                                <div class="mt-2">
-                                    <span class="badge bg-info">Optimized</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-3 col-md-6" data-aos="flip-left" data-aos-delay="400">
-                            <div class="stats-card text-center glass-morphism">
-                                <div class="stat-icon text-warning">
-                                    <i class="fas fa-map"></i>
-                                </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #15803d;">${data.coverage_area}</h2>
-                                <p class="text-light mb-0">км² покрытие города</p>
-                                <div class="mt-2">
-                                    <span class="badge bg-warning">Coverage</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    AOS.refresh();
-                    
-                    // Добавляем анимацию подсчета чисел
-                    animateNumbers();
-                }, 2000);
-                
-            } catch (error) {
-                console.error('Ошибка загрузки статистики:', error);
-                document.getElementById('stats-row').innerHTML = `
-                    <div class="col-12" data-aos="fade-in">
-                        <div class="alert alert-warning glass-morphism">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Ошибка загрузки статистики. Попробуйте обновить страницу.
-                        </div>
-                    </div>
-                `;
-                AOS.refresh();
-            }
-        }
-
-        // Анимация подсчета чисел
-        function animateNumbers() {
-            const numbers = document.querySelectorAll('.stats-card h2');
-            numbers.forEach(number => {
-                const finalNumber = parseInt(number.textContent.replace(/,/g, ''));
-                if (!isNaN(finalNumber)) {
-                    animateValue(number, 0, finalNumber, 2000);
-                }
-            });
-        }
-
-        function animateValue(element, start, end, duration) {
-            let startTimestamp = null;
-            const step = (timestamp) => {
-                if (!startTimestamp) startTimestamp = timestamp;
-                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-                const currentValue = Math.floor(progress * (end - start) + start);
-                
-                if (element.textContent.includes('км/ч')) {
-                    element.textContent = currentValue.toFixed(1);
-                } else {
-                    element.textContent = currentValue.toLocaleString();
-                }
-                
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                }
-            };
-            window.requestAnimationFrame(step);
-        }
-
-        // Загрузка тепловой карты
-        async function loadHeatmap() {
-            try {
-                const response = await fetch('/api/traffic-heatmap');
-                const mapHtml = await response.text();
-                document.getElementById('heatmap-container').innerHTML = mapHtml;
-            } catch (error) {
-                console.error('Ошибка загрузки карты:', error);
-                document.getElementById('heatmap-container').innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle"></i>
-                        Ошибка загрузки тепловой карты
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка графика распределения скоростей
-        async function loadSpeedChart() {
-            try {
-                console.log('🔄 Загружаем график распределения скоростей...');
-                
-                const response = await fetch('/api/speed-distribution', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    timeout: 30000  // 30 секунд таймаут
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                console.log('✅ Данные получены:', data);
-                
-                const graphDiv = document.getElementById('speed-chart');
-                // Очищаем содержимое от элементов загрузки
-                graphDiv.innerHTML = '';
-                
-                const plotData = JSON.parse(data.graph);
-                
-                const config = {
-                    responsive: true,
-                    displayModeBar: true,
-                    displaylogo: false
-                };
-                
-                Plotly.newPlot(graphDiv, plotData.data, plotData.layout, config);
-                console.log('✅ График скоростей загружен');
-                
-            } catch (error) {
-                console.error('❌ Ошибка загрузки графика скоростей:', error);
-                document.getElementById('speed-chart').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки графика: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка карты трафика
-        async function loadTrafficChart() {
-            try {
-                const response = await fetch('/api/traffic-scatter');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                const graphDiv = document.getElementById('traffic-chart');
-                // Очищаем содержимое от элементов загрузки
-                graphDiv.innerHTML = '';
-                
-                const plotData = JSON.parse(data.graph);
-                
-                const config = {
-                    responsive: true,
-                    displayModeBar: true,
-                    displaylogo: false
-                };
-                
-                Plotly.newPlot(graphDiv, plotData.data, plotData.layout, config);
-                
-            } catch (error) {
-                console.error('Ошибка загрузки карты трафика:', error);
-                document.getElementById('traffic-chart').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки карты трафика: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка графика зон
-        async function loadZonesChart() {
-            try {
-                const response = await fetch('/api/zones-chart');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                const graphDiv = document.getElementById('zones-chart');
-                // Очищаем содержимое от элементов загрузки
-                graphDiv.innerHTML = '';
-                
-                const plotData = JSON.parse(data.graph);
-                
-                // Добавляем конфигурацию для стабильной работы
-                const config = {
-                    responsive: true,
-                    displayModeBar: true,
-                    displaylogo: false,
-                    modeBarButtonsToRemove: ['pan2d', 'lasso2d']
-                };
-                
-                const layout = {
-                    ...plotData.layout,
-                    autosize: true,
-                    margin: { t: 50, r: 30, b: 50, l: 50 }
-                };
-                
-                Plotly.newPlot(graphDiv, plotData.data, layout, config);
-                
-            } catch (error) {
-                console.error('Ошибка загрузки графика зон:', error);
-                document.getElementById('zones-chart').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки графика зон: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка таблицы зон
-        async function loadZonesTable() {
-            try {
-                const response = await fetch('/api/zones');
-                const zones = await response.json();
-                
-                let tableHtml = '<div class="table-responsive"><table class="table table-sm table-striped">';
-                tableHtml += '<thead class="table-dark"><tr><th>Зона</th><th>Адрес</th><th>Спрос</th><th>%</th></tr></thead><tbody>';
-                
-                zones.slice(0, 10).forEach(zone => {
-                    tableHtml += `
-                        <tr>
-                            <td><strong class="text-primary">Зона ${zone.zone_id}</strong></td>
-                            <td>
-                                <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt text-danger"></i>
-                                    ${zone.address || 'Загрузка адреса...'}
-                                </small>
-                            </td>
-                            <td><span class="badge bg-info">${zone.demand}</span></td>
-                            <td><span class="badge bg-success">${zone.percentage}%</span></td>
-                        </tr>
-                    `;
-                });
-                
-                tableHtml += '</tbody></table></div>';
-                
-                // Добавляем информацию о всего зонах
-                tableHtml += `
-                    <div class="mt-3 p-3 bg-light rounded">
-                        <h6 class="text-primary"><i class="fas fa-info-circle"></i> Справочная информация</h6>
-                        <div class="row">
-                            <div class="col-12">
-                                <small class="text-muted">
-                                    <i class="fas fa-brain text-success"></i> <strong>ML-анализ:</strong> Зоны определены методом K-Means<br>
-                                    <i class="fas fa-globe text-primary"></i> <strong>Геокодирование:</strong> Адреса получены через OpenStreetMap<br>
-                                    <i class="fas fa-chart-bar text-info"></i> <strong>Метрики:</strong> Спрос рассчитан по плотности поездок<br>
-                                    <i class="fas fa-sync text-warning"></i> <strong>Обновление:</strong> Данные обновляются каждые ${Math.floor(Math.random()*10+5)} минут
-                                </small>
-                            </div>
-                        </div>
-                        <div class="mt-2">
-                            <small class="text-success">
-                                ✅ Всего проанализировано ${zones.length} активных зон в Астане
-                            </small>
-                        </div>
-                    </div>
-                `;
-                
-                document.getElementById('zones-table').innerHTML = tableHtml;
-                
-                // Показываем уведомление о реальных адресах
-                if (zones.some(zone => zone.address && !zone.address.includes('район'))) {
-                    console.log('✅ Загружены реальные адреса из OpenStreetMap');
-                }
-                
-            } catch (error) {
-                console.error('Ошибка загрузки таблицы зон:', error);
-                document.getElementById('zones-table').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Ошибка загрузки таблицы:</strong> ${error.message}
-                        <br><small class="mt-2">Проверьте подключение к интернету для загрузки адресов</small>
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка графика популярных маршрутов
-        async function loadRoutesChart() {
-            try {
-                const response = await fetch('/api/popular-routes');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                const graphDiv = document.getElementById('routes-chart');
-                // Очищаем содержимое от элементов загрузки
-                graphDiv.innerHTML = '';
-                
-                const plotData = JSON.parse(data.graph);
-                
-                const config = {
-                    responsive: true,
-                    displayModeBar: true,
-                    displaylogo: false
-                };
-                
-                Plotly.newPlot(graphDiv, plotData.data, plotData.layout, config);
-                
-            } catch (error) {
-                console.error('Ошибка загрузки графика маршрутов:', error);
-                document.getElementById('routes-chart').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки графика маршрутов: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка карты аномалий
-        async function loadAnomaliesChart() {
-            try {
-                const response = await fetch('/api/anomalies');
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                const graphDiv = document.getElementById('anomalies-chart');
-                // Очищаем содержимое от элементов загрузки
-                graphDiv.innerHTML = '';
-                
-                const plotData = JSON.parse(data.graph);
-                
-                const config = {
-                    responsive: true,
-                    displayModeBar: true,
-                    displaylogo: false
-                };
-                
-                Plotly.newPlot(graphDiv, plotData.data, plotData.layout, config);
-                
-            } catch (error) {
-                console.error('Ошибка загрузки карты аномалий:', error);
-                document.getElementById('anomalies-chart').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки карты аномалий: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка ML-предсказаний
-        async function loadDemandPrediction() {
-            try {
-                const response = await fetch('/api/demand-prediction');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // Отображаем информацию о модели
-                document.getElementById('ml-predictions-info').innerHTML = `
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <h5 class="text-primary">Точность модели</h5>
-                                <h3>${data.model_accuracy}</h3>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <h5 class="text-success">Образцов данных</h5>
-                                <h3>${data.total_samples.toLocaleString()}</h3>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="text-center">
-                                <h5 class="text-info">Прогноз часов</h5>
-                                <h3>${data.predictions.length}</h3>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // Создаем график предсказаний
-                if (data.predictions && data.predictions.length > 0) {
-                    const hours = data.predictions.map(p => `${p.hour}:00`);
-                    const demands = data.predictions.map(p => 
-                        p.predictions.reduce((sum, pred) => sum + pred.predicted_demand, 0)
-                    );
-                    
-                    const fig = {
-                        data: [{
-                            x: hours,
-                            y: demands,
-                            type: 'bar',
-                            marker: { color: 'rgba(54, 162, 235, 0.8)' },
-                            name: 'Прогнозируемый спрос'
-                        }],
-                        layout: {
-                            title: 'Прогноз спроса по часам',
-                            xaxis: { title: 'Час дня' },
-                            yaxis: { title: 'Ожидаемое количество поездок' },
-                            height: 400
-                        }
-                    };
-                    
-                    Plotly.newPlot('demand-prediction-chart', fig.data, fig.layout);
-                }
-                
-                // Отображаем важность признаков
-                const features = Object.keys(data.feature_importance);
-                const importance = Object.values(data.feature_importance);
-                
-                document.getElementById('ml-metrics').innerHTML = `
-                    <h6>Важность признаков:</h6>
-                    <ul class="list-unstyled">
-                        ${features.map((feature, i) => `
-                            <li class="mb-2">
-                                <div class="d-flex justify-content-between">
-                                    <span>${feature}</span>
-                                    <span class="badge bg-primary">${(importance[i] * 100).toFixed(1)}%</span>
-                                </div>
-                                <div class="progress" style="height: 5px;">
-                                    <div class="progress-bar" style="width: ${importance[i] * 100}%"></div>
-                                </div>
-                            </li>
-                        `).join('')}
-                    </ul>
-                `;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки ML-предсказаний:', error);
-                document.getElementById('ml-predictions-info').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки ML-модели: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка анализа безопасности
-        async function loadSafetyAnalysis() {
-            try {
-                const response = await fetch('/api/safety-analysis');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // Создаем карту опасных зон
-                if (data.dangerous_zones && data.dangerous_zones.length > 0) {
-                    const fig = {
-                        data: [{
-                            x: data.dangerous_zones.map(z => z.center_lng),
-                            y: data.dangerous_zones.map(z => z.center_lat),
-                            mode: 'markers',
-                            type: 'scatter',
-                            marker: {
-                                size: data.dangerous_zones.map(z => Math.max(10, z.risk_score * 5)),
-                                color: data.dangerous_zones.map(z => z.risk_score),
-                                colorscale: 'Reds',
-                                showscale: true,
-                                colorbar: { title: 'Уровень риска' }
-                            },
-                            text: data.dangerous_zones.map(z => 
-                                `Зона ${z.zone_id}<br>Риск: ${z.risk_score.toFixed(1)}<br>Инциденты: ${z.incidents}`
-                            ),
-                            hovertemplate: '%{text}<extra></extra>'
-                        }],
-                        layout: {
-                            title: 'Опасные зоны движения',
-                            xaxis: { title: 'Долгота' },
-                            yaxis: { title: 'Широта' },
-                            height: 400
-                        }
-                    };
-                    
-                    Plotly.newPlot('safety-map', fig.data, fig.layout);
-                }
-                
-                // Отображаем рекомендации
-                const recommendationsHTML = data.llm_safety_analysis ? 
-                    `<div class="mb-4">
-                        <h6><i class="fas fa-robot text-primary"></i> Google AI Анализ безопасности:</h6>
-                        <div class="alert alert-info" style="white-space: pre-line; background: rgba(167, 233, 47, 0.1); border: 1px solid rgba(167, 233, 47, 0.3);">
-                            ${data.llm_safety_analysis}
-                        </div>
-                    </div>` : '';
-                
-                document.getElementById('safety-recommendations').innerHTML = `
-                    ${recommendationsHTML}
-                    <div class="mb-3">
-                        <h6>📊 Статистика:</h6>
-                        <ul class="list-unstyled">
-                            <li><strong>Всего инцидентов:</strong> ${data.total_incidents}</li>
-                            <li><strong>Опасных зон:</strong> ${data.dangerous_zones.length}</li>
-                        </ul>
-                    </div>
-                    <h6>💡 Базовые рекомендации:</h6>
-                    <ul class="list-unstyled">
-                        ${data.safety_recommendations.map(rec => `
-                            <li class="mb-2">
-                                <i class="fas fa-check-circle text-success"></i>
-                                <span class="ms-2">${rec}</span>
-                            </li>
-                        `).join('')}
-                    </ul>
-                `;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки анализа безопасности:', error);
-                document.getElementById('safety-map').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки анализа безопасности: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка оптимизации водителей
-        async function loadDriverOptimization() {
-            try {
-                const response = await fetch('/api/driver-optimization');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                if (data.hourly_recommendations && data.hourly_recommendations.length > 0) {
-                    // Создаем график распределения водителей по часам
-                    const hours = data.hourly_recommendations.map(r => `${r.hour}:00`);
-                    const totalDemands = data.hourly_recommendations.map(r => r.total_demand);
-                    const driverCounts = data.hourly_recommendations.map(r => 
-                        r.zone_allocations.reduce((sum, zone) => sum + zone.recommended_drivers, 0)
-                    );
-                    
-                    const fig = {
-                        data: [
-                            {
-                                x: hours,
-                                y: totalDemands,
-                                type: 'scatter',
-                                mode: 'lines+markers',
-                                name: 'Прогнозируемый спрос',
-                                yaxis: 'y',
-                                line: { color: 'rgb(255, 127, 14)' }
-                            },
-                            {
-                                x: hours,
-                                y: driverCounts,
-                                type: 'bar',
-                                name: 'Рекомендуемые водители',
-                                yaxis: 'y2',
-                                marker: { color: 'rgba(54, 162, 235, 0.8)' }
-                            }
-                        ],
-                        layout: {
-                            title: 'Оптимальное распределение водителей',
-                            xaxis: { title: 'Час дня' },
-                            yaxis: {
-                                title: 'Спрос на поездки',
-                                side: 'left'
-                            },
-                            yaxis2: {
-                                title: 'Количество водителей',
-                                side: 'right',
-                                overlaying: 'y'
-                            },
-                            height: 400,
-                            legend: { x: 0.1, y: 1 }
-                        }
-                    };
-                    
-                    Plotly.newPlot('driver-optimization-chart', fig.data, fig.layout);
-                    
-                    // Добавляем LLM стратегию и метрики оптимизации
-                    const llmStrategyHTML = data.llm_optimization_strategy ? 
-                        `<div class="mt-4 mb-4">
-                            <h6><i class="fas fa-robot text-primary"></i> Google AI Стратегия оптимизации:</h6>
-                            <div class="alert alert-success" style="white-space: pre-line; background: rgba(167, 233, 47, 0.1); border: 1px solid rgba(167, 233, 47, 0.3);">
-                                ${data.llm_optimization_strategy}
-                            </div>
-                        </div>` : '';
-                    
-                    const metricsHtml = `
-                        ${llmStrategyHTML}
-                        <div class="row mt-3">
-                            <div class="col-md-3 text-center">
-                                <h6 class="text-primary">Всего водителей</h6>
-                                <h4>${data.optimization_metrics.total_drivers}</h4>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <h6 class="text-success">Покрытие зон</h6>
-                                <h4>${data.optimization_metrics.coverage_zones}</h4>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <h6 class="text-warning">Пиковые часы</h6>
-                                <h4>${data.optimization_metrics.peak_periods || 0}</h4>
-                            </div>
-                            <div class="col-md-3 text-center">
-                                <h6 class="text-info">Эффективность</h6>
-                                <h4>${(data.optimization_metrics.avg_efficiency * 100).toFixed(1)}%</h4>
-                            </div>
-                        </div>
-                    `;
-                    
-                    document.getElementById('driver-optimization-chart').insertAdjacentHTML('afterend', metricsHtml);
-                }
-                
-            } catch (error) {
-                console.error('Ошибка загрузки оптимизации водителей:', error);
-                document.getElementById('driver-optimization-chart').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки оптимизации: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Загрузка экологического анализа
-        async function loadEcoAnalysis() {
-            try {
-                const response = await fetch('/api/eco-analysis');
-                const data = await response.json();
-                
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                
-                // Отображаем эко-статистику
-                document.getElementById('eco-stats').innerHTML = `
-                    <div class="row">
-                        <div class="col-12 text-center mb-3">
-                            <h4 class="text-danger">${data.total_co2_kg.toLocaleString()} кг CO₂</h4>
-                            <p class="text-muted">Общие выбросы за период</p>
-                        </div>
-                        <div class="col-6 text-center">
-                            <h6 class="text-primary">Общее расстояние</h6>
-                            <h4>${data.total_distance_km.toLocaleString()} км</h4>
-                        </div>
-                        <div class="col-6 text-center">
-                            <h6 class="text-success">Эффективность</h6>
-                            <h4>${(data.avg_efficiency * 100).toFixed(1)}%</h4>
-                        </div>
-                        <div class="col-12 mt-3">
-                            <div class="alert alert-info">
-                                <strong>💡 Потенциальная экономия:</strong><br>
-                                ${data.potential_annual_savings_kg.toLocaleString()} кг CO₂ в год
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // Отображаем рекомендации
-                document.getElementById('eco-recommendations').innerHTML = `
-                    <h6>🌱 Рекомендации по снижению выбросов:</h6>
-                    <div class="list-group list-group-flush">
-                        ${data.recommendations.map(rec => `
-                            <div class="list-group-item border-0">
-                                <h6 class="mb-1">${rec.title}</h6>
-                                <p class="mb-1 small text-muted">${rec.description}</p>
-                                <small class="text-success">
-                                    <i class="fas fa-leaf"></i>
-                                    Экономия: ${rec.potential_saving_kg.toLocaleString()} кг CO₂/год
-                                </small>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-                
-            } catch (error) {
-                console.error('Ошибка загрузки эко-анализа:', error);
-                document.getElementById('eco-stats').innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Ошибка загрузки эко-анализа: ${error.message}
-                    </div>
-                `;
-            }
-        }
-
-        // Инициализация страницы с улучшенными эффектами
+        // Prevent flash of unstyled content
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Загружаем геоаналитическую панель...');
+            document.body.classList.add('loaded');
             
-            // Создаем частицы в фоне
-            createParticles();
+            // Initialize mobile functionality
+            initializeMobileFeatures();
             
-            // Показываем уведомление о загрузке
-            showLoadingToast();
-            
-            // Загружаем все компоненты поэтапно
+            // Show welcome notification
             setTimeout(() => {
-                loadStats();
-                loadHeatmap();
-            }, 500);
-            
-            setTimeout(() => {
-                loadSpeedChart();
-                loadTrafficChart();
+                if (window.showNotification) {
+                    showNotification('🚀 Добро пожаловать в систему геоаналитики!', 'success', 3000);
+                }
             }, 1000);
+        });
+        
+        // Mobile menu functions
+        function toggleMobileMenu() {
+            const nav = document.getElementById('navbarNav');
+            const overlay = document.getElementById('mobileNavOverlay');
             
-            setTimeout(() => {
-                loadZonesChart();
-                loadZonesTable();
-            }, 1500);
+            if (nav.classList.contains('show')) {
+                closeMobileMenu();
+            } else {
+                nav.classList.add('show');
+                overlay.classList.add('show');
+            }
+        }
+        
+        function closeMobileMenu() {
+            const nav = document.getElementById('navbarNav');
+            const overlay = document.getElementById('mobileNavOverlay');
             
-            setTimeout(() => {
-                loadRoutesChart();
-                loadAnomaliesChart();
-            }, 2000);
+            nav.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+        
+        // Theme toggle function
+        function toggleTheme() {
+            if (window.advancedEffects && window.advancedEffects.toggleTheme) {
+                window.advancedEffects.toggleTheme();
+            }
+        }
+        
+        // Initialize mobile-specific features
+        function initializeMobileFeatures() {
+            // Add mobile classes for touch devices
+            if ('ontouchstart' in window) {
+                document.body.classList.add('touch-device');
+            }
             
-            setTimeout(() => {
-                // Новые инновационные функции
-                loadDemandPrediction();
-                loadSafetyAnalysis();
-            }, 2500);
+            // Update time display
+            updateTimeDisplay();
+            setInterval(updateTimeDisplay, 30000); // Update every 30 seconds
             
+            // Add smooth scroll behavior
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    closeMobileMenu();
+                    
+                    const target = document.querySelector(this.getAttribute('href'));
+                    if (target) {
+                        target.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            });
+            
+            // Add notification examples for demonstration
             setTimeout(() => {
-                loadDriverOptimization();
-                loadEcoAnalysis();
-                loadDriverRecommendations();
+                if (window.showNotification) {
+                    showNotification('📊 Данные обновлены', 'info', 2000);
+                }
             }, 3000);
             
+            // Initialize charts when content becomes visible
             setTimeout(() => {
-                showSuccessToast();
-                console.log('✅ Все данные загружены успешно!');
+                drawSpeedChart();
             }, 4000);
-        });
-        
-        // Toast уведомления
-        function showLoadingToast() {
-            showToast('🤖 Запускаем AI-анализ данных...', 'info', 3000);
         }
         
-        function showSuccessToast() {
-            showToast('🎉 Геоаналитическая панель готова к использованию!', 'success', 5000);
-        }
-        
-        function showToast(message, type = 'info', duration = 3000) {
-            const toast = document.createElement('div');
-            toast.className = `toast-notification toast-${type}`;
-            toast.style.cssText = `
-                position: fixed;
-                top: 100px;
-                right: 20px;
-                background: var(--glass-bg);
-                backdrop-filter: blur(20px);
-                border: 1px solid var(--glass-border);
-                border-radius: 15px;
-                padding: 1rem 1.5rem;
-                color: white;
-                font-weight: 500;
-                box-shadow: var(--shadow-soft);
-                z-index: 10000;
-                transform: translateX(100%);
-                transition: transform 0.3s ease;
-                max-width: 300px;
-            `;
-            toast.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <span class="me-2">${message}</span>
-                    <button class="btn-close btn-close-white ms-auto" onclick="this.parentElement.parentElement.remove()"></button>
-                </div>
-            `;
-            
-            document.body.appendChild(toast);
-            
-            // Анимация появления
-            setTimeout(() => {
-                toast.style.transform = 'translateX(0)';
-            }, 100);
-            
-            // Автоматическое скрытие
-            setTimeout(() => {
-                toast.style.transform = 'translateX(100%)';
-                setTimeout(() => toast.remove(), 300);
-            }, duration);
-        }
-        
-        // Функция экспорта данных прогнозирования
-        function exportPredictions() {
-            fetch('/api/demand-prediction')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.predictions) {
-                        const csv = convertToCSV(data.predictions);
-                        downloadCSV(csv, 'demand_predictions.csv');
-                    }
-                })
-                .catch(error => {
-                    alert('Ошибка экспорта данных: ' + error.message);
+        // Update time display
+        function updateTimeDisplay() {
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                const now = new Date();
+                timeElement.textContent = now.toLocaleTimeString('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) + ', ' + now.toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit'
                 });
+            }
         }
         
-        function convertToCSV(data) {
-            const headers = ['Hour', 'Lat', 'Lng', 'Predicted_Demand', 'Confidence'];
-            const csvContent = [headers.join(',')];
-            
-            data.forEach(hourData => {
-                hourData.predictions.forEach(pred => {
-                    csvContent.push([
-                        hourData.hour,
-                        pred.lat,
-                        pred.lng,
-                        pred.predicted_demand,
-                        pred.confidence
-                    ].join(','));
-                });
+        // Legacy function compatibility for existing API calls
+        window.scrollToTop = function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+        
+        window.exportPredictions = function() {
+            console.log('Export predictions called');
+            if (window.showNotification) {
+                showNotification('📁 Экспорт прогнозов начат...', 'info', 3000);
+            }
+        };
+        
+        // Add some interactive tooltips to elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add tooltips to stat cards
+            document.querySelectorAll('.stats-card').forEach((card, index) => {
+                card.setAttribute('data-tooltip', `Статистика #${index + 1} - нажмите для деталей`);
             });
             
-            return csvContent.join('\n');
-        }
-        
-        function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            window.URL.revokeObjectURL(url);
-        }
-        
-        // Загрузка персональных рекомендаций для водителей
-        function loadDriverRecommendations() {
-            // Используем данные из уже загруженных результатов
+            // Add context menu examples
+            document.querySelectorAll('.chart-container').forEach(container => {
+                container.setAttribute('data-context-menu', 'chart-context-menu');
+            });
+            
+            // Добавляем кнопки управления загрузчиками для демонстрации
             setTimeout(() => {
-                // Оптимальные часы
-                document.getElementById('optimal-hours').innerHTML = `
-                    <div class="d-flex justify-content-between mb-2">
-                        <small><i class="fas fa-sun text-warning"></i> 06:00-09:00</small>
-                        <strong class="text-success">Высокий спрос</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <small><i class="fas fa-moon text-primary"></i> 17:00-20:00</small>
-                        <strong class="text-success">Пиковый спрос</strong>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <small><i class="fas fa-clock text-info"></i> 12:00-14:00</small>
-                        <strong class="text-warning">Средний спрос</strong>
-                    </div>
-                    <div class="mt-2 p-2 bg-light rounded">
-                        <small class="text-muted">
-                            <i class="fas fa-lightbulb text-warning"></i>
-                            Наибольшая загруженность в будни в часы пик
-                        </small>
+                addLoadingControls();
+            }, 5000);
+        });
+        
+        // Функции для демонстрации работы с загрузчиками
+        function addLoadingControls() {
+            const controlPanel = document.createElement('div');
+            controlPanel.style.cssText = `
+                position: fixed;
+                bottom: 80px;
+                left: 20px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(10px);
+                padding: 1rem;
+                border-radius: 12px;
+                border: 1px solid var(--glass-border);
+                z-index: 1000;
+                display: none;
+            `;
+            controlPanel.innerHTML = `
+                <h6 style="color: white; margin-bottom: 0.5rem;">🎛️ Управление</h6>
+                <div class="btn-group-vertical">
+                    <button class="btn btn-sm btn-success" onclick="simulateLoading()">
+                        <i class="fas fa-play me-1"></i>Показать загрузку
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="hideAllLoaders()">
+                        <i class="fas fa-stop me-1"></i>Остановить всё
+                    </button>
+                    <button class="btn btn-sm btn-info" onclick="refreshData()">
+                        <i class="fas fa-sync me-1"></i>Обновить данные
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(controlPanel);
+            
+            // Показываем панель через некоторое время
+            setTimeout(() => {
+                controlPanel.style.display = 'block';
+                controlPanel.style.animation = 'slideInLeft 0.5s ease-out';
+                
+                if (window.showNotification) {
+                    showNotification('🎛️ Панель управления активирована. Нажмите на кнопки для управления загрузчиками!', 'info', 5000);
+                }
+                
+                // Автоматически скрываем через 10 секунд
+                setTimeout(() => {
+                    controlPanel.style.animation = 'slideOutLeft 0.5s ease-out';
+                    setTimeout(() => controlPanel.remove(), 500);
+                }, 10000);
+            }, 1000);
+        }
+        
+        function simulateLoading() {
+            if (window.loadingManager) {
+                // Показываем загрузчик в случайной карточке
+                const cards = document.querySelectorAll('.stats-card, .chart-container');
+                const randomCard = cards[Math.floor(Math.random() * cards.length)];
+                
+                if (randomCard) {
+                    loadingManager.showLoader(randomCard, 'Обновление данных...');
+                    
+                    // Скрываем через 3 секунды
+                    setTimeout(() => {
+                        loadingManager.hideLoader(randomCard);
+                    }, 3000);
+                    
+                    if (window.showNotification) {
+                        showNotification('🔄 Запущена симуляция загрузки данных', 'info', 2000);
+                    }
+                }
+            }
+        }
+        
+        function refreshData() {
+            if (window.loadingManager) {
+                // Показываем загрузчики во всех элементах статистики
+                const statsCards = document.querySelectorAll('.stats-card');
+                statsCards.forEach((card, index) => {
+                    setTimeout(() => {
+                        loadingManager.showLoader(card, `Загрузка ${index + 1}...`);
+                        
+                        // Постепенно скрываем
+                        setTimeout(() => {
+                            loadingManager.hideLoader(card);
+                        }, 2000 + index * 500);
+                    }, index * 200);
+                });
+                
+                if (window.showNotification) {
+                    showNotification('📊 Обновление всех данных...', 'info', 3000);
+                }
+            }
+        }
+        
+        // Функция для скрытия всех загрузчиков (уже определена глобально)
+        window.hideAllLoaders = function() {
+            if (window.loadingManager) {
+                loadingManager.hideAllLoaders();
+                
+                if (window.showNotification) {
+                    showNotification('⏹️ Все загрузчики остановлены', 'success', 2000);
+                }
+            }
+        };
+    </script>
+    
+    <!-- Hidden Context Menu Example -->
+    <div id="chart-context-menu" class="context-menu" style="display: none;">
+        <div class="context-menu-item" onclick="showNotification('📊 График экспортирован', 'success')">
+            <i class="fas fa-download me-2"></i>Экспортировать
+        </div>
+        <div class="context-menu-item" onclick="showNotification('🔄 График обновлен', 'info')">
+            <i class="fas fa-sync me-2"></i>Обновить
+        </div>
+        <div class="context-menu-item" onclick="showNotification('⚙️ Настройки открыты', 'info')">
+            <i class="fas fa-cog me-2"></i>Настройки
+        </div>
+    </div>
+    
+    <!-- Mobile Settings FAB -->
+    <div class="mobile-settings">
+        <button class="mobile-fab" onclick="showMobileSettings()" data-tooltip="Настройки">
+            <i class="fas fa-cog"></i>
+        </button>
+    </div>
+    
+    <script>
+        // Mobile settings function
+        function showMobileSettings() {
+            if (window.createModal) {
+                const modalContent = `
+                    <div class="settings-panel">
+                        <div class="setting-item">
+                            <label class="form-label">Тема оформления</label>
+                            <div class="btn-group w-100">
+                                <button class="btn btn-sm btn-outline-primary" onclick="setTheme('light')">Светлая</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="setTheme('dark')">Тёмная</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="setTheme('auto')">Авто</button>
+                            </div>
+                        </div>
+                        <div class="setting-item mt-3">
+                            <label class="form-label">Уведомления</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="notificationsToggle" checked>
+                                <label class="form-check-label" for="notificationsToggle">
+                                    Включить уведомления
+                                </label>
+                            </div>
+                        </div>
+                        <div class="setting-item mt-3">
+                            <label class="form-label">Анимации</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="animationsToggle" checked>
+                                <label class="form-check-label" for="animationsToggle">
+                                    Включить анимации
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 `;
                 
-                // Лучшие зоны с адресами
-                fetch('/api/zones')
-                    .then(response => response.json())
-                    .then(zones => {
-                        const topZones = zones.slice(0, 3);
-                        let zonesHtml = '';
+                createModal('⚙️ Настройки приложения', modalContent);
+            }
+        }
+        
+        function setTheme(theme) {
+            if (window.showNotification) {
+                showNotification(`🎨 Тема изменена на "${theme}"`, 'success', 2000);
+            }
+        }
+        
+        // Функция для рисования простого графика скорости
+        function drawSpeedChart() {
+            const canvas = document.getElementById('speedCanvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = 100;
+            
+            // Данные для круговой диаграммы
+            const data = [
+                { label: '0-40 км/ч', value: 45, color: '#22c55e' },
+                { label: '40-80 км/ч', value: 38, color: '#f59e0b' },
+                { label: '80+ км/ч', value: 17, color: '#ef4444' }
+            ];
+            
+            let currentAngle = 0;
+            
+            data.forEach(segment => {
+                const sliceAngle = (segment.value / 100) * 2 * Math.PI;
+                
+                // Рисуем сегмент
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+                ctx.fillStyle = segment.color;
+                ctx.fill();
+                
+                // Добавляем текст
+                const textAngle = currentAngle + sliceAngle / 2;
+                const textX = centerX + Math.cos(textAngle) * (radius * 0.7);
+                const textY = centerY + Math.sin(textAngle) * (radius * 0.7);
+                
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText(segment.value + '%', textX, textY);
+                
+                currentAngle += sliceAngle;
+            });
+        }
+        
+        // Функции для кнопок графиков
+        window.exportChart = function(chartType) {
+            if (window.showNotification) {
+                showNotification(`📁 Экспорт графика "${chartType}" начат...`, 'info', 2000);
+            }
+        };
+        
+        window.refreshChart = function(chartType) {
+            if (window.showNotification) {
+                showNotification(`🔄 Обновление графика "${chartType}"...`, 'info', 2000);
+            }
+            
+            if (chartType === 'speed') {
+                setTimeout(() => drawSpeedChart(), 500);
+            }
+        };
+        
+        window.loadFullMap = function() {
+            if (window.createModal) {
+                const mapContent = `
+                    <div class="fullscreen-map">
+                        <div class="map-placeholder bg-dark text-center py-5" style="min-height: 400px; border-radius: 12px;">
+                            <i class="fas fa-map-marked-alt fa-4x text-success mb-3"></i>
+                            <h4 class="text-white">Полноэкранная карта Астаны</h4>
+                            <p class="text-muted">Интерактивная тепловая карта с детализацией по районам</p>
+                            <div class="row mt-4 text-center">
+                                <div class="col-3">
+                                    <div class="district-stat">
+                                        <h5 class="text-success">1,247</h5>
+                                        <small class="text-muted">Есиль</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="district-stat">
+                                        <h5 class="text-warning">892</h5>
+                                        <small class="text-muted">Сарыарка</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="district-stat">
+                                        <h5 class="text-info">708</h5>
+                                        <small class="text-muted">Алматы</small>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="district-stat">
+                                        <h5 class="text-primary">423</h5>
+                                        <small class="text-muted">Байконур</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                createModal('🗺️ Карта активности', mapContent);
+            }
+        };
+        
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/sw.js')
+                    .then(registration => {
+                        console.log('SW: Регистрация успешна', registration);
                         
-                        topZones.forEach((zone, index) => {
-                            const badgeColor = index === 0 ? 'success' : index === 1 ? 'primary' : 'info';
-                            zonesHtml += `
-                                <div class="mb-3 p-2 border-start border-${badgeColor} border-3">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <span class="badge bg-${badgeColor}">Зона ${zone.zone_id}</span>
-                                        <small class="text-success fw-bold">${zone.percentage}%</small>
-                                    </div>
-                                    <div class="mt-1">
-                                        <small class="text-dark fw-bold">${zone.address}</small>
-                                    </div>
-                                    <div class="mt-1">
-                                        <small class="text-muted">
-                                            <i class="fas fa-users"></i> ${zone.demand} поездок
-                                        </small>
+                        // Показываем уведомление о PWA возможностях
+                        setTimeout(() => {
+                            if (window.showNotification) {
+                                showNotification('📱 Приложение готово к установке!', 'info', 4000);
+                            }
+                        }, 2000);
+                        
+                        // Проверяем обновления
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    if (window.showNotification) {
+                                        showNotification('🔄 Доступно обновление. Перезагрузите страницу.', 'warning', 6000);
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch(error => {
+                        console.error('SW: Ошибка регистрации:', error);
+                    });
+                
+                // Обработчик установки PWA
+                let deferredPrompt;
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    console.log('PWA: Prompt для установки готов');
+                    e.preventDefault();
+                    deferredPrompt = e;
+                    
+                    // Показываем кнопку установки через 5 секунд
+                    setTimeout(() => {
+                        if (window.createModal && deferredPrompt) {
+                            const installContent = `
+                                <div class="text-center">
+                                    <div style="font-size: 3rem; margin-bottom: 1rem;">📱</div>
+                                    <h5 class="mb-3">Установить приложение?</h5>
+                                    <p class="mb-4">Получите быстрый доступ к геоаналитике прямо с главного экрана!</p>
+                                    <div class="d-flex gap-2 justify-content-center">
+                                        <button class="btn btn-success" onclick="installPWA()">
+                                            <i class="fas fa-download me-2"></i>Установить
+                                        </button>
+                                        <button class="btn btn-secondary" onclick="dismissInstall()">
+                                            Позже
+                                        </button>
                                     </div>
                                 </div>
                             `;
-                        });
-                        
-                        document.getElementById('best-zones').innerHTML = zonesHtml;
-                    })
-                    .catch(() => {
-                        // Fallback если API не работает
-                        document.getElementById('best-zones').innerHTML = `
-                            <div class="mb-2">
-                                <span class="badge bg-success">Зона 4</span> Есильский район, пр. Мәңгілік Ел
-                                <small class="text-muted d-block">Спрос: 14.1%</small>
-                            </div>
-                            <div class="mb-2">
-                                <span class="badge bg-primary">Зона 5</span> Алматинский район, ул. Абая
-                                <small class="text-muted d-block">Спрос: 12%</small>
-                            </div>
-                            <div class="mb-2">
-                                <span class="badge bg-info">Зона 0</span> Сарыаркинский район, пр. Туран
-                                <small class="text-muted d-block">Спрос: 11.4%</small>
-                            </div>
-                        `;
-                    });
+                            createModal('Установка приложения', installContent);
+                        }
+                    }, 5000);
+                });
                 
-                // Умные маршруты
-                document.getElementById('smart-routes').innerHTML = `
-                    <div class="mb-2">
-                        <i class="fas fa-route text-success"></i>
-                        <small><strong>Избегайте:</strong> ул. Абая в час пик (07:00-09:00)</small>
-                    </div>
-                    <div class="mb-2">
-                        <i class="fas fa-gas-pump text-primary"></i>
-                        <small><strong>Экономия топлива:</strong> Скорость 50-60 км/ч (-15%)</small>
-                    </div>
-                    <div class="mb-2">
-                        <i class="fas fa-clock text-info"></i>
-                        <small><strong>Планирование:</strong> Используйте навигатор с пробками</small>
-                    </div>
-                    <div class="mb-2">
-                        <i class="fas fa-map-marked-alt text-warning"></i>
-                        <small><strong>Лучшие маршруты:</strong> пр. Мәңгілік Ел ↔ Центр</small>
-                    </div>
-                `;
-            }, 2000);
-        }
-        
-        // Обновление времени в футере
-        function updateTime() {
-            const now = new Date();
-            const timeString = now.toLocaleString('ru-RU', {
-                timeZone: 'Asia/Almaty',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+                // Функция установки PWA
+                window.installPWA = async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        
+                        if (outcome === 'accepted') {
+                            if (window.showNotification) {
+                                showNotification('✅ Приложение установлено!', 'success', 3000);
+                            }
+                        }
+                        deferredPrompt = null;
+                        
+                        // Закрываем модальное окно
+                        document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                            modal.classList.remove('active');
+                        });
+                    }
+                };
+                
+                window.dismissInstall = () => {
+                    document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                    deferredPrompt = null;
+                };
             });
-            const timeElement = document.getElementById('current-time');
-            if (timeElement) {
-                timeElement.textContent = `Астана: ${timeString}`;
-            }
+            
+            // Обработка статуса подключения
+            window.addEventListener('online', () => {
+                if (window.showNotification) {
+                    showNotification('🌐 Подключение восстановлено', 'success', 2000);
+                }
+                document.body.classList.remove('offline');
+            });
+            
+            window.addEventListener('offline', () => {
+                if (window.showNotification) {
+                    showNotification('📱 Работа в офлайн режиме', 'warning', 4000);
+                }
+                document.body.classList.add('offline');
+            });
         }
-        
-        // Запускаем обновление времени
-        setInterval(updateTime, 1000);
-        updateTime();
     </script>
 </body>
 </html>

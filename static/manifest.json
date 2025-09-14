@@ -1,0 +1,123 @@
+{
+    "name": "Геоаналитика Астаны",
+    "short_name": "ГеоАстана",
+    "description": "Комплексный AI-анализ транспортных потоков Астаны на основе GPS-треков",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f0f23",
+    "theme_color": "#00d4aa",
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "lang": "ru",
+    "icons": [
+        {
+            "src": "/static/icons/icon-72x72.png",
+            "sizes": "72x72",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-96x96.png",
+            "sizes": "96x96",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-128x128.png",
+            "sizes": "128x128",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-144x144.png",
+            "sizes": "144x144",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-152x152.png",
+            "sizes": "152x152",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png",
+            "purpose": "maskable any"
+        },
+        {
+            "src": "/static/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable any"
+        }
+    ],
+    "categories": ["productivity", "business", "navigation"],
+    "screenshots": [
+        {
+            "src": "/static/screenshots/desktop-screenshot.png",
+            "sizes": "1920x1080",
+            "type": "image/png",
+            "form_factor": "wide"
+        },
+        {
+            "src": "/static/screenshots/mobile-screenshot.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Статистика",
+            "short_name": "Статистика",
+            "description": "Показать статистические данные",
+            "url": "/#stats",
+            "icons": [
+                {
+                    "src": "/static/icons/stats-icon.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "Тепловая карта",
+            "short_name": "Карта",
+            "description": "Открыть тепловую карту",
+            "url": "/#heatmap",
+            "icons": [
+                {
+                    "src": "/static/icons/map-icon.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        },
+        {
+            "name": "ML Прогноз",
+            "short_name": "ML",
+            "description": "Машинное обучение и прогнозы",
+            "url": "/#ml-prediction",
+            "icons": [
+                {
+                    "src": "/static/icons/ai-icon.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                }
+            ]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false,
+    "edge_side_panel": {
+        "preferred_width": 400
+    }
+}

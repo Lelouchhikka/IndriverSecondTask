@@ -1,0 +1,183 @@
+/* ===== КРИТИЧЕСКИЕ СТИЛИ ДЛЯ БЫСТРОЙ ЗАГРУЗКИ ===== */
+
+/* Основные переменные - только самые необходимые */
+:root {
+    --primary-color: #a7e92f;
+    --primary-dark: #016a2b;
+    --glass-bg: rgba(167, 233, 47, 0.25);
+    --glass-border: rgba(167, 233, 47, 0.18);
+    --transition: all 0.3s ease;
+}
+
+/* Базовые стили для предотвращения FOUC */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(-45deg, #a7e92f, #016a2b, #22c55e, #15803d);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    line-height: 1.6;
+    color: white;
+    overflow-x: hidden;
+}
+
+/* Критическая анимация градиента */
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Базовые контейнеры */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Навигация - критическая */
+.navbar-custom {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    transition: var(--transition);
+}
+
+.navbar-brand {
+    color: white !important;
+    font-weight: 700;
+    font-size: 1.2rem;
+}
+
+.nav-link {
+    color: white !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: 10px;
+    transition: var(--transition);
+}
+
+.nav-link:hover {
+    background: rgba(167, 233, 47, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Основной контент */
+.header-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    padding: 6rem 0 4rem 0;
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+/* Стеклянный морфизм - упрощенный */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    transition: var(--transition);
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(1, 106, 43, 0.3);
+}
+
+/* Загрузочные индикаторы */
+.loading-simple {
+    text-align: center;
+    padding: 2rem;
+    color: white;
+}
+
+.spinner-simple {
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin-simple 1s linear infinite;
+    display: inline-block;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin-simple {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Кнопки - простые но эффектные */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border: none;
+    border-radius: 15px;
+    padding: 0.75rem 1.5rem;
+    color: white;
+    font-weight: 600;
+    transition: var(--transition);
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(167, 233, 47, 0.4);
+    color: white;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .header-section {
+        padding: 4rem 0 2rem 0;
+    }
+    
+    .glass-card {
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .nav-link {
+        padding: 0.5rem !important;
+        font-size: 0.9rem;
+    }
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: 4px;
+}
+
+/* Прогресс бар загрузки страницы */
+.page-loader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+    z-index: 9999;
+    transition: width 0.3s ease;
+}

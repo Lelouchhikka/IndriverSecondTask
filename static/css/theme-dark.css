@@ -1,0 +1,314 @@
+/* ===== ТЕМНАЯ ТЕМА ===== */
+
+[data-theme="dark"] {
+    /* Переменные для темной темы */
+    --primary-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --success-gradient: linear-gradient(135deg, #00c851 0%, #00ff87 100%);
+    --danger-gradient: linear-gradient(135deg, #ff4444 0%, #ff6b6b 100%);
+    --warning-gradient: linear-gradient(135deg, #ffbb33 0%, #ffd54f 100%);
+    --info-gradient: linear-gradient(135deg, #33b5e5 0%, #00bcd4 100%);
+    --dark-gradient: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    
+    /* Glass morphism для темной темы */
+    --glass-bg: rgba(26, 26, 26, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-hover: rgba(26, 26, 26, 0.9);
+    
+    /* Новые темные градиенты */
+    --neon-gradient: linear-gradient(45deg, #4facfe, #00f2fe, #4facfe);
+    --cyber-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --sunset-gradient: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+    
+    /* Тени для темной темы */
+    --shadow-soft: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+    --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.4);
+    --shadow-intense: 0 20px 60px rgba(0, 0, 0, 0.7);
+    --shadow-neon: 0 0 30px rgba(79, 172, 254, 0.6);
+}
+
+[data-theme="dark"] body {
+    background: linear-gradient(-45deg, #1a1a1a, #2d2d2d, #1f1f1f, #262626);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    color: #ffffff;
+}
+
+[data-theme="dark"] body::before {
+    background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.02"><circle cx="30" cy="30" r="4"/></g></svg>');
+}
+
+[data-theme="dark"] body::after {
+    background: radial-gradient(circle at 25% 25%, rgba(79, 172, 254, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(0, 242, 254, 0.1) 0%, transparent 50%);
+}
+
+[data-theme="dark"] .glass-morphism {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+}
+
+[data-theme="dark"] .glass-morphism:hover {
+    background: var(--glass-hover);
+    border-color: rgba(79, 172, 254, 0.3);
+}
+
+[data-theme="dark"] .header-section {
+    background: var(--primary-gradient);
+}
+
+[data-theme="dark"] .section-title {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .stats-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+}
+
+[data-theme="dark"] .chart-container {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+}
+
+[data-theme="dark"] .navbar-custom {
+    background: var(--glass-bg);
+    border-bottom: 1px solid var(--glass-border);
+}
+
+[data-theme="dark"] .form-control, 
+[data-theme="dark"] .form-select {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus {
+    background: var(--glass-hover);
+    border-color: rgba(79, 172, 254, 0.5);
+    box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="dark"] .table {
+    color: #ffffff;
+}
+
+[data-theme="dark"] .table th {
+    background: var(--dark-gradient);
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover > td {
+    background: rgba(79, 172, 254, 0.1);
+}
+
+[data-theme="dark"] .alert {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .footer {
+    background: var(--dark-gradient);
+    color: #ffffff;
+}
+
+[data-theme="dark"] .fab {
+    background: var(--primary-gradient);
+    box-shadow: var(--shadow-intense);
+}
+
+[data-theme="dark"] .fab:hover {
+    box-shadow: var(--shadow-neon);
+}
+
+[data-theme="dark"] .innovation-badge {
+    background: var(--neon-gradient);
+    color: #000;
+}
+
+[data-theme="dark"] .btn-neon {
+    background: var(--neon-gradient);
+    box-shadow: var(--shadow-neon);
+    color: #000 !important;
+}
+
+[data-theme="dark"] .card-neon:hover {
+    box-shadow: var(--shadow-neon);
+}
+
+[data-theme="dark"] .text-gradient {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+[data-theme="dark"] .text-neon {
+    background: var(--neon-gradient);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Переключатель темы */
+.theme-toggle {
+    position: fixed;
+    top: 100px;
+    left: 20px;
+    width: 60px;
+    height: 30px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 25px;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-soft);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    padding: 2px;
+}
+
+.theme-toggle::before {
+    content: '☀️';
+    position: absolute;
+    left: 4px;
+    font-size: 0.8rem;
+    transition: var(--transition-smooth);
+}
+
+.theme-toggle::after {
+    content: '🌙';
+    position: absolute;
+    right: 4px;
+    font-size: 0.8rem;
+    transition: var(--transition-smooth);
+}
+
+.theme-toggle-ball {
+    width: 24px;
+    height: 24px;
+    background: var(--primary-gradient);
+    border-radius: 50%;
+    position: absolute;
+    left: 2px;
+    transition: var(--transition-bounce);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+[data-theme="dark"] .theme-toggle-ball {
+    left: 32px;
+    background: var(--primary-gradient);
+}
+
+.theme-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: var(--shadow-hover);
+}
+
+.theme-toggle:active {
+    transform: scale(0.95);
+}
+
+/* Анимация переключения темы */
+* {
+    transition: background-color 0.3s ease, 
+                border-color 0.3s ease, 
+                color 0.3s ease,
+                box-shadow 0.3s ease !important;
+}
+
+/* Улучшенные цвета для темной темы */
+[data-theme="dark"] .bg-primary { background: var(--primary-gradient) !important; }
+[data-theme="dark"] .bg-success { background: var(--success-gradient) !important; }
+[data-theme="dark"] .bg-danger { background: var(--danger-gradient) !important; }
+[data-theme="dark"] .bg-warning { background: var(--warning-gradient) !important; }
+[data-theme="dark"] .bg-info { background: var(--info-gradient) !important; }
+
+[data-theme="dark"] .alert-info { border-left-color: #33b5e5; }
+[data-theme="dark"] .alert-success { border-left-color: #00c851; }
+[data-theme="dark"] .alert-warning { border-left-color: #ffbb33; }
+[data-theme="dark"] .alert-danger { border-left-color: #ff4444; }
+
+/* Скроллбар для темной темы */
+[data-theme="dark"] ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: var(--primary-gradient);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: var(--success-gradient);
+    background-clip: padding-box;
+}
+
+/* Частицы для темной темы */
+[data-theme="dark"] .particle {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Мобильная адаптация переключателя темы */
+@media (max-width: 768px) {
+    .theme-toggle {
+        top: 70px;
+        left: 10px;
+        width: 50px;
+        height: 25px;
+    }
+    
+    .theme-toggle-ball {
+        width: 20px;
+        height: 20px;
+        left: 2px;
+    }
+    
+    [data-theme="dark"] .theme-toggle-ball {
+        left: 26px;
+    }
+    
+    .theme-toggle::before {
+        font-size: 0.7rem;
+        left: 3px;
+    }
+    
+    .theme-toggle::after {
+        font-size: 0.7rem;
+        right: 3px;
+    }
+}
+
+/* Tooltip для переключателя темы */
+.theme-toggle[title]:hover::before {
+    content: attr(title);
+    position: absolute;
+    bottom: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+    z-index: 10000;
+}

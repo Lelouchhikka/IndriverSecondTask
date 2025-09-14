@@ -1,0 +1,372 @@
+/* ===== ОСНОВНЫЕ СТИЛИ И ПЕРЕМЕННЫЕ ===== */
+
+:root {
+    /* Основная палитра цветов */
+    --primary-gradient: linear-gradient(135deg, #a7e92f 0%, #016a2b 100%);
+    --success-gradient: linear-gradient(135deg, #a7e92f 0%, #22c55e 100%);
+    --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    --info-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    --dark-gradient: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+    
+    /* Glass morphism эффекты */
+    --glass-bg: rgba(167, 233, 47, 0.25);
+    --glass-border: rgba(167, 233, 47, 0.18);
+    --glass-hover: rgba(167, 233, 47, 0.35);
+    
+    /* Новые градиенты */
+    --neon-gradient: linear-gradient(45deg, #a7e92f, #00f0ff, #a7e92f);
+    --cyber-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --sunset-gradient: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
+    
+    /* Тени и эффекты */
+    --shadow-soft: 0 8px 32px 0 rgba(1, 106, 43, 0.37);
+    --shadow-hover: 0 15px 35px rgba(1, 106, 43, 0.2);
+    --shadow-intense: 0 20px 60px rgba(1, 106, 43, 0.4);
+    --shadow-neon: 0 0 30px rgba(167, 233, 47, 0.6);
+    
+    /* Переходы и анимации */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --transition-elastic: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Базовые стили */
+* {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    box-sizing: border-box;
+}
+
+*::selection {
+    background: rgba(167, 233, 47, 0.3);
+    color: white;
+}
+
+body {
+    background: linear-gradient(-45deg, #a7e92f, #016a2b, #22c55e, #15803d);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+/* Фоновые эффекты */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"><g fill="none" fill-rule="evenodd"><g fill="%23ffffff" fill-opacity="0.05"><circle cx="30" cy="30" r="4"/></g></svg>');
+    z-index: -1;
+    pointer-events: none;
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 25% 25%, rgba(167, 233, 47, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(1, 106, 43, 0.1) 0%, transparent 50%);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Улучшенный glass morphism эффект */
+.glass-morphism {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+    border-radius: 20px;
+    transition: var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-morphism::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+}
+
+.glass-morphism:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-hover);
+    background: var(--glass-hover);
+    border-color: rgba(167, 233, 47, 0.3);
+}
+
+/* Улучшенные кнопки */
+.btn {
+    border-radius: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0.75rem 1.5rem;
+    transition: var(--transition-bounce);
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.btn:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--shadow-hover);
+}
+
+.btn:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+/* Новые анимированные кнопки */
+.btn-neon {
+    background: var(--neon-gradient);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    box-shadow: var(--shadow-neon);
+    color: #000 !important;
+    font-weight: 800;
+}
+
+.btn-cyber {
+    background: var(--cyber-gradient);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-cyber::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    transform: rotate(45deg);
+    transition: transform 0.6s;
+}
+
+.btn-cyber:hover::after {
+    transform: rotate(45deg) translate(100%, 100%);
+}
+
+/* Новые типы карточек */
+.card-neon {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    transition: var(--transition-smooth);
+}
+
+.card-neon::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--neon-gradient);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    border-radius: 22px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.card-neon:hover::before {
+    opacity: 1;
+}
+
+.card-neon:hover {
+    transform: translateY(-10px) scale(1.03);
+    box-shadow: var(--shadow-neon);
+}
+
+/* Улучшенная типографика */
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+.text-gradient {
+    background: var(--primary-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.text-neon {
+    background: var(--neon-gradient);
+    background-size: 200% 200%;
+    animation: gradientShift 3s ease infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Улучшенные формы */
+.form-control, .form-select {
+    background: var(--glass-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    color: white;
+    transition: var(--transition-smooth);
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+    background: var(--glass-hover);
+    border-color: rgba(167, 233, 47, 0.5);
+    box-shadow: 0 0 0 0.2rem rgba(167, 233, 47, 0.25);
+    color: white;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Улучшенная навигация */
+.navbar-custom {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-soft);
+    transition: var(--transition-smooth);
+}
+
+.navbar-custom .navbar-nav .nav-link {
+    color: white !important;
+    font-weight: 600;
+    padding: 0.8rem 1.2rem !important;
+    margin: 0 0.3rem;
+    border-radius: 15px;
+    transition: var(--transition-bounce);
+    position: relative;
+    overflow: hidden;
+}
+
+.navbar-custom .navbar-nav .nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--primary-gradient);
+    transition: left 0.3s ease;
+    z-index: -1;
+}
+
+.navbar-custom .navbar-nav .nav-link:hover::before {
+    left: 0;
+}
+
+.navbar-custom .navbar-nav .nav-link:hover {
+    color: white !important;
+    transform: translateY(-2px) scale(1.05);
+}
+
+/* Прогресс бар прокрутки */
+.progress-bar-scroll {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: var(--primary-gradient);
+    z-index: 9999;
+    transition: width 0.3s ease;
+    border-radius: 0 0 2px 0;
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-gradient);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--success-gradient);
+    background-clip: padding-box;
+}
+
+/* Responsive Design Improvements */
+@media (max-width: 768px) {
+    .glass-morphism {
+        margin-bottom: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .btn {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+    
+    .navbar-custom .navbar-nav .nav-link {
+        margin: 0.2rem 0;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    :root {
+        font-size: 14px;
+    }
+    
+    .glass-morphism {
+        padding: 1rem;
+        border-radius: 15px;
+    }
+    
+    .btn {
+        padding: 0.6rem 1rem;
+        font-size: 0.9rem;
+    }
+}
