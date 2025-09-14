@@ -24,6 +24,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from geopy.distance import geodesic
 from geopy.geocoders import Nominatim
+import time
+import os
+import google.generativeai as genai
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -31,10 +34,94 @@ warnings.filterwarnings('ignore')
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'geotracks_analysis_2024'
 
-# Глобальные переменные для кэширования данных
+# Инициализация Google AI клиента
+# Рекомендуется установить переменную окружения GOOGLE_API_KEY
+try:
+    google_api_key = os.getenv('GOOGLE_API_KEY', 'AIzaSyDBiigAcAO-WyJmomxjhWjwolXqIQpvuVM')
+    genai.configure(api_key=google_api_key)
+    
+    # Сначала проверим доступные модели
+    try:
+        available_models = [m.name for m in genai.list_models()]
+        print(f"📋 Доступные модели: {available_models[:3]}...")  # Показываем первые 3
+    except:
+        print("⚠️ Не удалось получить список моделей")
+    
+    # Попробуем разные модели по порядку
+    model_names = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro', 'models/gemini-1.5-flash']
+    model = None
+    
+    for model_name in model_names:
+        try:
+            model = genai.GenerativeModel(model_name)
+            print(f"✅ Используется модель: {model_name}")
+            break
+        except Exception as e:
+            print(f"⚠️ Модель {model_name} недоступна: {str(e)[:100]}...")
+            continue
+    
+    if model:
+        AI_AVAILABLE = True
+        print("✅ Google AI Studio API инициализирован")
+    else:
+        AI_AVAILABLE = False
+        print("❌ Не удалось инициализировать ни одну модель")
+        
+except Exception as e:
+    print(f"⚠️ Google AI Studio API недоступен: {e}")
+    AI_AVAILABLE = False
+    model = None
+
 cached_data = {}
 analysis_results = {}
 address_cache = {}  # Кэш для адресов
+
+def get_llm_analysis(prompt, system_prompt="Ты эксперт по транспортной аналитике и безопасности дорожного движения.", max_tokens=2000):
+    """
+    Получает анализ от LLM (Google Gemini)
+    """
+    if not AI_AVAILABLE or not model:
+        return "ИИ анализ временно недоступен. Используются стандартные алгоритмы."
+    
+    try:
+        # Комбинируем системный промпт с пользовательским
+        full_prompt = f"{system_prompt}\n\n{prompt}"
+        
+        # Генерируем ответ с помощью Gemini с улучшенной конфигурацией
+        response = model.generate_content(
+            full_prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=max_tokens,
+                temperature=0.7,
+                top_p=0.8,
+                top_k=40
+            ),
+            safety_settings=[
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+            ]
+        )
+        
+        if response.text:
+            return response.text.strip()
+        else:
+            return "ИИ не смог сгенерировать ответ. Проверьте промпт или попробуйте позже."
+            
+    except Exception as e:
+        error_msg = str(e)
+        print(f"⚠️ Ошибка Google AI запроса: {error_msg}")
+        
+        # Специфичные сообщения об ошибках
+        if "models/" in error_msg and "not found" in error_msg:
+            return "ИИ анализ недоступен: модель не найдена. Попробуйте обновить API."
+        elif "quota" in error_msg.lower():
+            return "ИИ анализ недоступен: превышен лимит запросов."
+        elif "api" in error_msg.lower() and "key" in error_msg.lower():
+            return "ИИ анализ недоступен: проблема с API ключом."
+        else:
+            return f"ИИ анализ недоступен: {error_msg[:100]}..."
 
 def load_and_process_data():
     """Загружает и обрабатывает данные при первом запуске"""
@@ -481,8 +568,10 @@ def build_demand_prediction_model(df_ml):
         return {'error': str(e)}
 
 def analyze_route_safety(df_ml):
-    """Анализирует безопасность маршрутов"""
+    """Анализирует безопасность маршрутов с использованием LLM"""
     try:
+        print("🔒 Анализ безопасности маршрутов с ИИ...")
+        
         # Определяем опасные зоны по аномальным скоростям и паттернам
         safety_features = df_ml[['lat', 'lng', 'spd', 'hour']].copy()
         
@@ -504,6 +593,8 @@ def analyze_route_safety(df_ml):
         zone_labels = kmeans.fit_predict(dangerous_zones[['lat', 'lng']])
         
         safety_zones = []
+        detailed_incidents = []
+        
         for i in range(kmeans.n_clusters):
             zone_data = dangerous_zones[zone_labels == i]
             
@@ -511,7 +602,7 @@ def analyze_route_safety(df_ml):
             high_speed_incidents = len(zone_data[zone_data['spd'] > zone_data['spd'].quantile(0.9)])
             night_incidents = len(zone_data[zone_data['hour'].isin([22, 23, 0, 1, 2, 3, 4, 5])])
             
-            safety_zones.append({
+            zone_info = {
                 'zone_id': int(i),
                 'center_lat': float(zone_data['lat'].mean()),
                 'center_lng': float(zone_data['lng'].mean()),
@@ -520,14 +611,60 @@ def analyze_route_safety(df_ml):
                 'night_incidents': int(night_incidents),
                 'avg_speed': float(zone_data['spd'].mean()),
                 'risk_score': float(min(10, len(zone_data) / 10 + zone_data['spd'].std() / 10))
+            }
+            safety_zones.append(zone_info)
+            
+            # Собираем детальную информацию для LLM анализа
+            detailed_incidents.append({
+                'zone': i + 1,
+                'incidents': int(len(zone_data)),
+                'avg_speed': float(round(zone_data['spd'].mean(), 1)),
+                'max_speed': float(round(zone_data['spd'].max(), 1)),
+                'high_speed_rate': float(round(high_speed_incidents / len(zone_data) * 100, 1)),
+                'night_incidents_rate': float(round(night_incidents / len(zone_data) * 100, 1)),
+                'peak_hours': [int(h) for h in zone_data['hour'].mode().tolist()[:3]]
             })
+        
+        # Создаем промпт для LLM анализа
+        llm_prompt = f"""Проанализируй данные о {len(safety_zones)} опасных зонах в Астане:
+
+Статистика инцидентов:
+"""
+        for incident in detailed_incidents:
+            llm_prompt += f"""
+- Зона {incident['zone']}: {incident['incidents']} инцидентов
+  * Средняя скорость: {incident['avg_speed']} км/ч
+  * Максимальная скорость: {incident['max_speed']} км/ч  
+  * Превышения скорости: {incident['high_speed_rate']}%
+  * Ночные инциденты: {incident['night_incidents_rate']}%
+  * Пиковые часы: {incident['peak_hours']}
+"""
+
+        llm_prompt += """
+Создай детальный анализ безопасности и практические рекомендации:
+1. Основные факторы риска
+2. Приоритетные зоны для вмешательства  
+3. Конкретные меры безопасности
+4. Прогноз развития ситуации
+5. Временные паттерны опасности
+
+Ответ должен быть структурированным и практичным для транспортных властей Астаны."""
+
+        # Получаем анализ от LLM
+        llm_analysis = get_llm_analysis(
+            llm_prompt, 
+            "Ты эксперт по безопасности дорожного движения в городах Казахстана. Анализируй данные о ДТП и предлагай конкретные решения для улучшения безопасности.",
+            max_tokens=800
+        )
         
         return {
             'dangerous_zones': sorted(safety_zones, key=lambda x: x['risk_score'], reverse=True),
             'total_incidents': len(dangerous_zones),
+            'llm_safety_analysis': llm_analysis,
+            'incident_statistics': detailed_incidents,
             'safety_recommendations': [
                 "Увеличить контроль скорости в выявленных зонах",
-                "Установить дополнительные камеры в ночное время",
+                "Установить дополнительные камеры в ночное время", 
                 "Предупреждать водителей о потенциально опасных участках",
                 "Анализировать паттерны движения для оптимизации маршрутов"
             ]
@@ -536,15 +673,22 @@ def analyze_route_safety(df_ml):
         return {'error': f'Ошибка анализа безопасности: {str(e)}'}
 
 def optimize_driver_allocation(zones_data, demand_predictions):
-    """Оптимизирует распределение водителей"""
+    """Оптимизирует распределение водителей с использованием LLM"""
     try:
+        print("🚗 Оптимизация распределения водителей с ИИ...")
+        
         total_drivers = 100  # Общее количество водителей
         
         # Рекомендации по часам
         hourly_recommendations = []
+        optimization_data = []
         
         if 'predictions' not in demand_predictions:
             return {'error': 'Нет данных предсказаний для оптимизации'}
+        
+        # Анализируем спрос по часам для создания стратегии
+        peak_hours = []
+        low_demand_hours = []
         
         for hour_data in demand_predictions['predictions'][:24]:  # Только будни
             if not hour_data['predictions']:
@@ -556,17 +700,31 @@ def optimize_driver_allocation(zones_data, demand_predictions):
             if total_predicted == 0:
                 continue
             
+            # Классифицируем часы по уровню спроса
+            if total_predicted > 50:  # Высокий спрос
+                peak_hours.append({
+                    'hour': int(hour),
+                    'total_demand': float(total_predicted),
+                    'top_zones': int(len([p for p in hour_data['predictions'] if p['predicted_demand'] > 5]))
+                })
+            elif total_predicted < 20:  # Низкий спрос
+                low_demand_hours.append({
+                    'hour': int(hour),
+                    'total_demand': float(total_predicted),
+                    'active_zones': int(len([p for p in hour_data['predictions'] if p['predicted_demand'] > 1]))
+                })
+            
             zone_allocations = []
             for zone_pred in hour_data['predictions'][:10]:  # Топ-10 зон
                 allocation_ratio = zone_pred['predicted_demand'] / total_predicted
                 recommended_drivers = int(total_drivers * allocation_ratio)
                 
                 zone_allocations.append({
-                    'lat': zone_pred['lat'],
-                    'lng': zone_pred['lng'],
-                    'predicted_demand': zone_pred['predicted_demand'],
-                    'recommended_drivers': max(1, recommended_drivers),
-                    'efficiency_score': zone_pred['confidence']
+                    'lat': float(zone_pred['lat']),
+                    'lng': float(zone_pred['lng']),
+                    'predicted_demand': float(zone_pred['predicted_demand']),
+                    'recommended_drivers': int(max(1, recommended_drivers)),
+                    'efficiency_score': float(zone_pred['confidence'])
                 })
             
             hourly_recommendations.append({
@@ -574,14 +732,60 @@ def optimize_driver_allocation(zones_data, demand_predictions):
                 'zone_allocations': zone_allocations,
                 'total_demand': float(total_predicted)
             })
+            
+            # Собираем данные для LLM анализа
+            optimization_data.append({
+                'hour': int(hour),
+                'demand_level': 'High' if total_predicted > 50 else 'Medium' if total_predicted > 20 else 'Low',
+                'total_demand': float(round(total_predicted, 1)),
+                'active_zones': int(len(zone_allocations)),
+                'peak_zone_demand': float(max([z['predicted_demand'] for z in zone_allocations])) if zone_allocations else 0.0
+            })
+        
+        # Создаем промпт для LLM стратегического анализа
+        llm_prompt = f"""Проанализируй оптимизацию распределения {total_drivers} водителей в Астане по 24-часовому циклу:
+
+ДАННЫЕ СПРОСА ПО ЧАСАМ:
+"""
+        for data in optimization_data:
+            llm_prompt += f"• {data['hour']:02d}:00 - Спрос: {data['demand_level']} ({data['total_demand']:.1f}), Активных зон: {data['active_zones']}, Пиковая зона: {data['peak_zone_demand']:.1f}\n"
+
+        llm_prompt += f"""
+ПИКОВЫЕ ЧАСЫ ({len(peak_hours)}): {[f"{h['hour']:02d}:00" for h in peak_hours]}
+ЧАСЫ НИЗКОГО СПРОСА ({len(low_demand_hours)}): {[f"{h['hour']:02d}:00" for h in low_demand_hours]}
+
+Создай стратегический план оптимизации:
+1. Анализ паттернов спроса и их причины
+2. Оптимальная стратегия распределения водителей
+3. Рекомендации по смещению графиков работы
+4. Способы повышения эффективности в пиковые часы
+5. Прогноз загруженности и планирование ресурсов
+6. Экономические выгоды от оптимизации
+
+Фокусируйся на практических решениях для транспортной компании в Астане."""
+
+        # Получаем стратегический анализ от LLM
+        llm_strategy = get_llm_analysis(
+            llm_prompt, 
+            "Ты эксперт по логистике и оптимизации транспортных систем в городах Казахстана. Создавай практичные стратегии для максимизации эффективности работы водителей.",
+            max_tokens=900
+        )
         
         return {
             'hourly_recommendations': hourly_recommendations,
+            'llm_optimization_strategy': llm_strategy,
+            'demand_analysis': {
+                'peak_hours_data': peak_hours,
+                'low_demand_hours_data': low_demand_hours,
+                'optimization_summary': optimization_data
+            },
             'optimization_metrics': {
                 'total_drivers': total_drivers,
                 'coverage_zones': len(hourly_recommendations),
+                'peak_periods': len(peak_hours),
+                'low_demand_periods': len(low_demand_hours),
                 'avg_efficiency': np.mean([r['zone_allocations'][0]['efficiency_score'] 
-                                         for r in hourly_recommendations if r['zone_allocations']])
+                                         for r in hourly_recommendations if r['zone_allocations']]) if hourly_recommendations else 0
             }
         }
     except Exception as e:

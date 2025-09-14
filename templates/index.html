@@ -18,16 +18,16 @@
     
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-            --danger-gradient: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            --glass-bg: rgba(255, 255, 255, 0.25);
-            --glass-border: rgba(255, 255, 255, 0.18);
-            --shadow-soft: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-            --shadow-hover: 0 15px 35px rgba(31, 38, 135, 0.2);
+            --primary-gradient: linear-gradient(135deg, #a7e92f 0%, #016a2b 100%);
+            --success-gradient: linear-gradient(135deg, #a7e92f 0%, #22c55e 100%);
+            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            --info-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            --dark-gradient: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+            --glass-bg: rgba(167, 233, 47, 0.25);
+            --glass-border: rgba(167, 233, 47, 0.18);
+            --shadow-soft: 0 8px 32px 0 rgba(1, 106, 43, 0.37);
+            --shadow-hover: 0 15px 35px rgba(1, 106, 43, 0.2);
         }
 
         * {
@@ -35,7 +35,7 @@
         }
 
         body {
-            background: linear-gradient(-45deg, #667eea, #764ba2, #f093fb, #f5576c);
+            background: linear-gradient(-45deg, #a7e92f, #016a2b, #22c55e, #15803d);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
             min-height: 100vh;
@@ -288,7 +288,7 @@
             position: absolute;
             top: 15px;
             right: 15px;
-            background: var(--danger-gradient);
+            background: linear-gradient(45deg, #a7e92f, #016a2b);
             color: white;
             padding: 0.4rem 0.8rem;
             border-radius: 20px;
@@ -296,7 +296,7 @@
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 1px;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+            box-shadow: 0 4px 15px rgba(1, 106, 43, 0.4);
             animation: pulse 2s infinite;
         }
 
@@ -830,8 +830,7 @@
                     <h4 class="text-center mb-3">🔒 Карта опасных зон</h4>
                     <div id="safety-map">
                         <div class="loading">
-                            <div class="spinner"></div>
-                            <p class="mt-2">Анализируем безопасность...</p>
+
                         </div>
                     </div>
                 </div>
@@ -863,8 +862,6 @@
             <h4 class="text-center mb-3">🚗 Рекомендуемое распределение по часам</h4>
             <div id="driver-optimization-chart">
                 <div class="loading">
-                    <div class="spinner"></div>
-                    <p class="mt-2">Оптимизируем распределение...</p>
                 </div>
             </div>
         </div>
@@ -1177,7 +1174,7 @@
                                 <div class="stat-icon text-primary">
                                     <i class="fas fa-database"></i>
                                 </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #667eea;">${data.total_records.toLocaleString()}</h2>
+                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #a7e92f;">${data.total_records.toLocaleString()}</h2>
                                 <p class="text-light mb-0">GPS точек обработано</p>
                                 <div class="mt-2">
                                     <span class="badge bg-primary">Big Data</span>
@@ -1189,7 +1186,7 @@
                                 <div class="stat-icon text-success">
                                     <i class="fas fa-route"></i>
                                 </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #11998e;">${data.unique_trips.toLocaleString()}</h2>
+                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #22c55e;">${data.unique_trips.toLocaleString()}</h2>
                                 <p class="text-light mb-0">Уникальных поездок</p>
                                 <div class="mt-2">
                                     <span class="badge bg-success">Analyzed</span>
@@ -1201,7 +1198,7 @@
                                 <div class="stat-icon text-info">
                                     <i class="fas fa-tachometer-alt"></i>
                                 </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #4facfe;">${data.avg_speed}</h2>
+                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #16a34a;">${data.avg_speed}</h2>
                                 <p class="text-light mb-0">км/ч средняя скорость</p>
                                 <div class="mt-2">
                                     <span class="badge bg-info">Optimized</span>
@@ -1213,7 +1210,7 @@
                                 <div class="stat-icon text-warning">
                                     <i class="fas fa-map"></i>
                                 </div>
-                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #f093fb;">${data.coverage_area}</h2>
+                                <h2 class="fw-bold mb-2" style="font-size: 2.5rem; color: #15803d;">${data.coverage_area}</h2>
                                 <p class="text-light mb-0">км² покрытие города</p>
                                 <div class="mt-2">
                                     <span class="badge bg-warning">Coverage</span>
@@ -1701,7 +1698,16 @@
                 }
                 
                 // Отображаем рекомендации
+                const recommendationsHTML = data.llm_safety_analysis ? 
+                    `<div class="mb-4">
+                        <h6><i class="fas fa-robot text-primary"></i> Google AI Анализ безопасности:</h6>
+                        <div class="alert alert-info" style="white-space: pre-line; background: rgba(167, 233, 47, 0.1); border: 1px solid rgba(167, 233, 47, 0.3);">
+                            ${data.llm_safety_analysis}
+                        </div>
+                    </div>` : '';
+                
                 document.getElementById('safety-recommendations').innerHTML = `
+                    ${recommendationsHTML}
                     <div class="mb-3">
                         <h6>📊 Статистика:</h6>
                         <ul class="list-unstyled">
@@ -1709,7 +1715,7 @@
                             <li><strong>Опасных зон:</strong> ${data.dangerous_zones.length}</li>
                         </ul>
                     </div>
-                    <h6>💡 Рекомендации:</h6>
+                    <h6>💡 Базовые рекомендации:</h6>
                     <ul class="list-unstyled">
                         ${data.safety_recommendations.map(rec => `
                             <li class="mb-2">
@@ -1788,18 +1794,31 @@
                     
                     Plotly.newPlot('driver-optimization-chart', fig.data, fig.layout);
                     
-                    // Добавляем метрики оптимизации
+                    // Добавляем LLM стратегию и метрики оптимизации
+                    const llmStrategyHTML = data.llm_optimization_strategy ? 
+                        `<div class="mt-4 mb-4">
+                            <h6><i class="fas fa-robot text-primary"></i> Google AI Стратегия оптимизации:</h6>
+                            <div class="alert alert-success" style="white-space: pre-line; background: rgba(167, 233, 47, 0.1); border: 1px solid rgba(167, 233, 47, 0.3);">
+                                ${data.llm_optimization_strategy}
+                            </div>
+                        </div>` : '';
+                    
                     const metricsHtml = `
+                        ${llmStrategyHTML}
                         <div class="row mt-3">
-                            <div class="col-md-4 text-center">
+                            <div class="col-md-3 text-center">
                                 <h6 class="text-primary">Всего водителей</h6>
                                 <h4>${data.optimization_metrics.total_drivers}</h4>
                             </div>
-                            <div class="col-md-4 text-center">
+                            <div class="col-md-3 text-center">
                                 <h6 class="text-success">Покрытие зон</h6>
                                 <h4>${data.optimization_metrics.coverage_zones}</h4>
                             </div>
-                            <div class="col-md-4 text-center">
+                            <div class="col-md-3 text-center">
+                                <h6 class="text-warning">Пиковые часы</h6>
+                                <h4>${data.optimization_metrics.peak_periods || 0}</h4>
+                            </div>
+                            <div class="col-md-3 text-center">
                                 <h6 class="text-info">Эффективность</h6>
                                 <h4>${(data.optimization_metrics.avg_efficiency * 100).toFixed(1)}%</h4>
                             </div>
